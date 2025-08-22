@@ -1,0 +1,14 @@
+{
+  "name": "geneva-travel-guide",
+  "version": "1.0.0",
+  "description": "Interactive travel guide with Netlify Functions for Gemini API",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}

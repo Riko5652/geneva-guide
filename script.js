@@ -53,6 +53,24 @@ const familyData = [
     { name: 'רן ליפץ', passport: '40751154' }
 ];
 
+// **RESTORED** - Packing list data
+const packingListData = {
+    "מסמכים וכסף": ["דרכונים", "צילומי דרכונים", "כרטיסי טיסה", "אישורי מלון", "רישיון נהיגה", "ביטוח נסיעות", "כסף מקומי (פרנק שוויצרי)", "כרטיסי אשראי"],
+    "ביגוד (מבוגרים)": ["מעיל גשם/רוח", "פליז/סווטשירט (3)", "חולצות קצרות (5)", "חולצות ארוכות (2)", "מכנסיים ארוכים (2)", "בגדי ערב (1)", "הלבשה תחתונה וגרביים (6 סטים)"],
+    "ביגוד (ילדים)": ["מעיל", "פליז/סווטשירט (3)", "חולצות קצרות (6)", "חולצות ארוכות (3)", "מכנסיים ארוכים (4)", "פיג'מות (2)", "גרביים ותחתונים (8 סטים)"],
+    "היגיינה ותרופות": ["תיק עזרה ראשונה", "תרופות אישיות", "משחת שיניים ומברשות", "שמפו וסבון", "קרם הגנה", "אלכוג'ל", "חיתולים", "מגבונים"],
+    "ציוד לילדים": ["עגלה", "מנשא", "צעצועים וספרים לטיסה", "חטיפים ובקבוקי מים", "מוצצים", "תמ\"ל (במידת הצורך)"],
+    "אלקטרוניקה": ["טלפונים ומטענים", "מטען נייד", "מתאם שקעים אירופאי", "אוזניות"]
+};
+
+// **RESTORED** - Luggage data
+const luggageData = [
+    { name: "מזוודה גדולה", owner: "משותף", weight: "עד 23 ק\"ג", notes: "לשלוח לבטן המטוס. מכילה את רוב הבגדים והציוד." },
+    { name: "טרולי עלייה למטוס", owner: "דור", weight: "עד 8 ק\"ג", notes: "מכיל בגדים להחלפה, מסמכים חשובים וציוד חיוני." },
+    { name: "תיק גב", owner: "עדי", weight: "-", notes: "תיק החתלה עם כל מה שצריך לילדים בזמינות מיידית." },
+    { name: "עגלה", owner: "ילדים", weight: "-", notes: "נשלחת בשער העלייה למטוס." }
+];
+
 // Global state variables
 let currentWeatherData = null;
 let chatImageBase64 = null;
@@ -65,36 +83,29 @@ let map = null; // To hold the map instance
 document.addEventListener('DOMContentLoaded', () => {
     fetchAndRenderWeather();
     renderActivities();
-    initMap(); // New function to initialize the map
+    initMap();
     setupEventListeners();
     displayDailyAttraction();
     populateItineraryDetails();
-    setupPackingGuideModal();
-    updateProgressBar(); // Initial call for the progress bar
-    setInterval(updateProgressBar, 60000); // Update progress bar every minute
+    setupPackingGuideModal(); // This now includes rendering the restored list
+    updateProgressBar();
+    setInterval(updateProgressBar, 60000);
 });
 
 // =================================================================================
 // NEW CORE FEATURES
 // =================================================================================
 
-/**
- * Initializes and populates the interactive Leaflet map.
- */
 function initMap() {
-    if (map) return; // Initialize map only once
+    if (map) return; 
 
     const hotelLocation = { lat: 46.2183, lon: 6.0744, name: "Mercure Hotel Meyrin" };
-
-    // Create the map instance
     map = L.map('map').setView([hotelLocation.lat, hotelLocation.lon], 12);
 
-    // Add the tile layer (map background)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // Define custom icons
     const hotelIcon = L.icon({
         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -107,12 +118,10 @@ function initMap() {
         iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
     });
 
-    // Add hotel marker
     L.marker([hotelLocation.lat, hotelLocation.lon], { icon: hotelIcon })
         .addTo(map)
         .bindTooltip(`<b>${hotelLocation.name}</b><br>נקודת המוצא שלכם!`).openTooltip();
 
-    // Add activity markers
     activitiesData.forEach(activity => {
         if (activity.lat && activity.lon) {
             L.marker([activity.lat, activity.lon], { icon: activityIcon })
@@ -122,9 +131,6 @@ function initMap() {
     });
 }
 
-/**
- * Updates the trip progress bar based on the current date and time.
- */
 function updateProgressBar() {
     const tripTimeline = [
         { date: '2025-08-22T00:00:00', label: 'ההכנות בעיצומן' },
@@ -177,12 +183,9 @@ function updateProgressBar() {
     document.getElementById('progress-bar-info').textContent = infoText;
 }
 
-/**
- * Generates and displays boarding passes for all flights and passengers.
- */
 function showBoardingPasses() {
     const container = document.getElementById('boarding-pass-content');
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; 
 
     const flights = [...flightData.outbound, ...flightData.inbound];
     const seatMapping = {
@@ -198,46 +201,37 @@ function showBoardingPasses() {
             const qrData = `M1LIPETZ/${passenger.name.split(' ')[0]} E${passenger.ticket.replace(/-/g, '')} ${flight.from.substring(flight.from.length - 4, flight.from.length - 1)}${flight.to.substring(flight.to.length - 4, flight.to.length - 1)}${flight.airline.substring(0,2)}${flight.flightNum.padStart(4, '0')} 236Y028C0045 100`;
             
             container.innerHTML += `
-                <div class="boarding-pass-card">
-                    <div class="flex justify-between items-center border-b pb-2 mb-2">
-                        <h4 class="font-bold text-lg">${flight.airline}</h4>
-                        <span class="text-sm font-semibold">כרטיס עלייה למטוס</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 text-sm">
-                        <div class="col-span-2">
-                            <div class="mb-2">
-                                <span class="text-gray-500 block">שם הנוסע</span>
-                                <span class="font-bold">${passenger.name}</span>
+                <div class="boarding-pass-wallet">
+                    <div class="bp-main">
+                        <div class="bp-header">
+                            <span class="bp-airline">${flight.airline}</span>
+                            <img src="https://placehold.co/40x40/FFFFFF/4A4A4A?text=${flight.airline.charAt(0)}" alt="Airline Logo" class="bp-logo">
+                        </div>
+                        <div class="bp-flight-info">
+                            <div>
+                                <span class="bp-label">${flight.from.substring(flight.from.length - 4, flight.from.length - 1)}</span>
+                                <span class="bp-value-large">${flight.from.split(' (')[0]}</span>
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <span class="text-gray-500 block">מ-</span>
-                                    <span class="font-bold">${flight.from}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 block">ל-</span>
-                                    <span class="font-bold">${flight.to}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 block">טיסה</span>
-                                    <span class="font-bold">${flight.flightNum}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 block">תאריך</span>
-                                    <span class="font-bold">${flight.date}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 block">שעה</span>
-                                    <span class="font-bold">${flight.time.split(' - ')[0]}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500 block">מושב</span>
-                                    <span class="font-bold text-lg">${passenger[seatKey]}</span>
-                                </div>
+                            <div class="bp-plane-icon">✈️</div>
+                            <div>
+                                <span class="bp-label">${flight.to.substring(flight.to.length - 4, flight.to.length - 1)}</span>
+                                <span class="bp-value-large">${flight.to.split(' (')[0]}</span>
                             </div>
                         </div>
-                        <div class="flex flex-col items-center justify-center">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}" alt="QR Code" class="rounded-md">
+                        <div class="bp-passenger-info">
+                            <span class="bp-label">נוסע/ת</span>
+                            <span class="bp-value">${passenger.name}</span>
+                        </div>
+                    </div>
+                    <div class="bp-stub">
+                        <div class="bp-qr-code">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(qrData)}" alt="QR Code">
+                        </div>
+                        <div class="bp-details">
+                            <div><span class="bp-label">טיסה</span><span class="bp-value">${flight.flightNum}</span></div>
+                            <div><span class="bp-label">מושב</span><span class="bp-value">${passenger[seatKey]}</span></div>
+                            <div><span class="bp-label">תאריך</span><span class="bp-value">${flight.date}</span></div>
+                            <div><span class="bp-label">שעת המראה</span><span class="bp-value">${flight.time.split(' - ')[0]}</span></div>
                         </div>
                     </div>
                 </div>
@@ -245,7 +239,6 @@ function showBoardingPasses() {
         });
     });
     
-    // Open the modal
     const modal = document.getElementById('boarding-pass-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -256,9 +249,6 @@ function showBoardingPasses() {
 // EXISTING & UPDATED FUNCTIONS
 // =================================================================================
 
-/**
- * Fetches weather data and renders it on the page.
- */
 async function fetchAndRenderWeather() {
     const forecastContainer = document.getElementById('weather-forecast');
     const whatToWearBtn = document.getElementById('what-to-wear-btn');
@@ -269,7 +259,7 @@ async function fetchAndRenderWeather() {
     try {
         const response = await fetch(url);
         const data = await response.json();
-        currentWeatherData = data; // Store weather data globally
+        currentWeatherData = data; 
 
         forecastContainer.innerHTML = '';
 
@@ -290,7 +280,7 @@ async function fetchAndRenderWeather() {
                 </div>
             `;
         });
-        whatToWearBtn.classList.remove('hidden'); // Show the button once weather is loaded
+        whatToWearBtn.classList.remove('hidden');
     } catch (error) {
         console.error("Failed to fetch weather:", error);
         forecastContainer.innerHTML = '<p class="text-center w-full col-span-full">לא ניתן היה לטעון את תחזית מזג האוויר.</p>';
@@ -462,12 +452,16 @@ async function handlePackingSuggestion() {
     resultContainer.innerHTML = response.replace(/\n/g, '<br>');
 }
 
+// **RESTORED & UPDATED**
 function setupPackingGuideModal() {
     const modal = document.getElementById('packing-guide-modal');
     if (!modal) return;
 
+    // Render the lists first
+    renderChecklist();
+    renderLuggage();
+
     const closeBtn = document.getElementById('close-packing-modal-btn');
-    
     closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
@@ -486,8 +480,59 @@ function setupPackingGuideModal() {
         });
     });
 
+    const progressBar = document.getElementById('packingProgressBar');
+    const checkboxes = modal.querySelectorAll('#checklist-container input[type="checkbox"]');
+    const totalCheckboxes = checkboxes.length;
+
+    const updateProgress = () => {
+        const checkedCount = modal.querySelectorAll('#checklist-container input[type="checkbox"]:checked').length;
+        const percentage = totalCheckboxes > 0 ? (checkedCount / totalCheckboxes) * 100 : 0;
+        progressBar.style.width = percentage + '%';
+    };
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateProgress);
+    });
+    updateProgress();
+
     setupPackingAssistant();
 }
+
+// **RESTORED**
+function renderChecklist() {
+    const container = document.getElementById('checklist-container');
+    if (!container) return;
+    let html = '';
+    for (const category in packingListData) {
+        html += `<div class="mb-4">
+            <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
+            <div class="space-y-2">
+                ${packingListData[category].map(item => `
+                    <label class="flex items-center">
+                        <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded">
+                        <span class="mr-3 text-gray-700">${item}</span>
+                    </label>
+                `).join('')}
+            </div>
+        </div>`;
+    }
+    container.innerHTML = html;
+}
+
+// **RESTORED**
+function renderLuggage() {
+    const container = document.getElementById('luggage-list-container');
+    if (!container) return;
+    container.innerHTML = luggageData.map(item => `
+        <div class="bg-secondary p-4 rounded-lg">
+            <h4 class="font-bold text-lg">${item.name}</h4>
+            <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
+            <p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>
+            <p class="text-sm mt-1"><em>${item.notes}</em></p>
+        </div>
+    `).join('');
+}
+
 
 function setupEventListeners() {
     document.querySelectorAll('.btn-filter[data-filter]').forEach(button => {
@@ -513,7 +558,6 @@ function setupEventListeners() {
     const mobileMenu = document.getElementById('mobile-menu');
     menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
     
-    // Auto-close mobile menu on selection
     mobileMenu.querySelectorAll('a, button').forEach(link => {
         link.addEventListener('click', () => {
             mobileMenu.classList.add('hidden');
@@ -521,7 +565,7 @@ function setupEventListeners() {
     });
 
     const modals = {
-        'packing-guide': { open: ['#open-packing-modal-btn', '#open-packing-modal-btn-mobile'], close: ['close-packing-modal-btn'] },
+        'packing-guide': { open: ['#open-packing-modal-btn', '#open-packing-modal-btn-mobile'], close: ['close-packing-modal-btn'], onOpen: setupPackingGuideModal },
         'nearby': { open: ['.nav-nearby-btn'], close: ['close-nearby-modal-btn'], onOpen: findAndDisplayNearby },
         'hotel-booking': { open: ['#open-hotel-modal-btn'], close: ['close-hotel-modal-btn'] },
         'flights-details': { open: ['#open-flights-modal-btn'], close: ['close-flights-modal-btn'], onOpen: populateFlightDetails },
@@ -563,7 +607,6 @@ function setupEventListeners() {
         }
     }
     
-    // Special listener for showing boarding passes
     document.getElementById('show-boarding-passes-btn').addEventListener('click', showBoardingPasses);
 
     const chatInput = document.getElementById('chat-input');

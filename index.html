@@ -18,7 +18,7 @@
     <header class="bg-white/80 backdrop-blur-sm sticky top-0 z-50 shadow-md">
         <nav class="container mx-auto px-6 py-3">
             <div class="flex justify-between items-center">
-                <div class="text-xl font-bold text-accent">ז'נבה עם קטנטנים 🧸</div>
+                <a href="#" class="text-xl font-bold text-accent">ז'נבה עם קטנטנים 🧸</a>
                 <div class="hidden lg:flex items-center space-x-6 space-x-reverse">
                     <a href="#plan" class="hover:text-accent">🗺️ מסלול</a>
                     <a href="#activities" class="hover:text-accent">🎈 פעילויות</a>
@@ -158,8 +158,7 @@
                 <p class="text-center w-full col-span-full">טוען תחזית עדכנית...</p>
             </div>
             <div class="text-center mt-6">
-                <button id="what-to-wear-btn" class="btn-primary px-6 py-3 rounded-lg hidden">✨ מה ללבוש היום?
-                    ✨</button>
+                <button id="what-to-wear-btn" class="btn-primary px-6 py-3 rounded-lg hidden">✨ מה ללבוש היום? ✨</button>
             </div>
         </section>
 
@@ -215,11 +214,9 @@
 
         <section id="custom-plan-generator" class="bg-white rounded-2xl border-2 border-dashed border-accent">
             <h2 class="section-title">✨ מתכנן הטיולים החכם ✨</h2>
-            <p class="section-subtitle">רוצים תוכנית יומית מותאמת אישית? ספרו לי מה מתחשק לכם (למשל: "יום רגוע עם גן
-                שעשועים ואוכל פשוט"), והבינה המלאכותית תבנה לכם הצעה.</p>
+            <p class="section-subtitle">רוצים תוכנית יומית מותאמת אישית? ספרו לי מה מתחשק לכם (למשל: "יום רגוע עם גן שעשועים ואוכל פשוט"), והבינה המלאכותית תבנה לכם הצעה.</p>
             <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2">
-                <input type="text" id="custom-plan-prompt" class="flex-1 border border-gray-300 rounded-lg py-3 px-4"
-                    placeholder="למשל: יום רגוע עם גינה וגלידה...">
+                <input type="text" id="custom-plan-prompt" class="flex-1 border border-gray-300 rounded-lg py-3 px-4" placeholder="למשל: יום רגוע עם גינה וגלידה...">
                 <button id="generate-custom-plan-btn" class="btn-primary px-6 py-3 rounded-lg">צור לי תוכנית</button>
             </div>
             <div id="custom-plan-result" class="max-w-2xl mx-auto mt-6"></div>
@@ -285,7 +282,7 @@
                             <div data-activity-details="Airloop"></div>
                         </div>
                         <div class="border-t pt-4 mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <button class="btn-primary py-2 px-4 rounded-lg gemini-plan-btn">✨ תכנן בוקר</button>
+                           <button class="btn-primary py-2 px-4 rounded-lg gemini-plan-btn">✨ תכנן בוקר</button>
                             <button class="bg-green-500 text-white py-2 px-4 rounded-lg gemini-summary-btn">✨ סכם
                                 לילדים</button>
                             <button class="bg-purple-500 text-white py-2 px-4 rounded-lg gemini-story-btn">✨ סיפור לילה
@@ -328,7 +325,7 @@
                             </ul>
                         </div>
                         <div class="border-t pt-4 mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <button class="btn-primary py-2 px-4 rounded-lg gemini-plan-btn">✨ תכנן בוקר</button>
+                           <button class="btn-primary py-2 px-4 rounded-lg gemini-plan-btn">✨ תכנן בוקר</button>
                             <button class="bg-green-500 text-white py-2 px-4 rounded-lg gemini-summary-btn">✨ סכם
                                 לילדים</button>
                             <button class="bg-purple-500 text-white py-2 px-4 rounded-lg gemini-story-btn">✨ סיפור לילה
@@ -618,8 +615,7 @@
                             <div class="bg-white rounded-lg shadow-md border border-gray-200">
                                 <button
                                     class="accordion-button w-full text-right p-4 flex justify-between items-center">
-                                    <span class="text-lg font-semibold flex-grow">🧳 מזוודה גדולה: שימוש בשקיות
-                                        ואקום</span>
+                                    <span class="text-lg font-semibold flex-grow">🧳 מזוודה גדולה: שימוש בשקיות ואקום</span>
                                     <span class="accordion-arrow transition-transform duration-300">▼</span>
                                 </button>
                                 <div class="accordion-content px-4 pb-4">
@@ -784,8 +780,8 @@
             </div>
             <div id="chat-image-preview-container" class="hidden p-2 border-t text-center">
                 <img id="chat-image-preview" class="max-h-24 rounded-md inline-block" />
-                <button id="chat-remove-image-btn" class="text-red-500 text-xs mx-auto block mt-1 hover:underline">הסר
-                    תמונה</button>
+                <button id="chat-remove-image-btn"
+                    class="text-red-500 text-xs mx-auto block mt-1 hover:underline">הסר תמונה</button>
             </div>
             <div class="mt-4 flex items-center">
                 <input type="file" id="chat-image-input" class="hidden" accept="image/*">
@@ -822,8 +818,7 @@
             <div id="story-modal-content" class="flex-1 overflow-y-auto p-4 leading-relaxed">
             </div>
             <div class="border-t pt-4 mt-4 text-center">
-                <button id="read-story-aloud-btn"
-                    class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-400" disabled>
+                <button id="read-story-aloud-btn" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-400" disabled>
                     🔊 הקריאו לי את הסיפור
                 </button>
                 <audio id="story-audio-player" class="hidden"></audio>
@@ -921,7 +916,7 @@
     </div>
 
     <div id="text-response-modal"
-        class="modal fixed inset-0 bg-black bg-opacity-60 z-[101] hidden items-center justify-center p-4">
+        class="modal fixed inset-0 bg-black bg-opacity-50 z-[101] hidden items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col p-4 relative">
             <button id="close-text-response-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"

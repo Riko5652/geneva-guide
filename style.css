@@ -46,22 +46,6 @@ body {
     color: #4A4A4A;
 }
 
-.chart-container {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-    height: 400px;
-    max-height: 50vh;
-}
-
-@media (min-width: 768px) {
-    .chart-container {
-        height: 500px;
-    }
-}
-
 .section-title {
     font-size: 2.25rem;
     font-weight: 700;
@@ -114,10 +98,11 @@ body {
     transition: opacity 0.3s ease-in-out;
 }
 
+/* Reduced spacing between sections for a tighter look */
 section {
-    padding-top: 2.5rem; /* Reduced padding */
-    padding-bottom: 2.5rem; /* Reduced padding */
-    margin-bottom: 1rem;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .activity-snippet {
@@ -165,13 +150,8 @@ section {
 }
 
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .nav-icon {
@@ -198,24 +178,20 @@ section {
     transition: width 0.5s ease-in-out;
 }
 
-.audio-guide-btn .loader {
-    width: 16px;
-    height: 16px;
-    border-width: 2px;
-}
-
 /* Styles for the interactive map */
 #map {
-    height: 600px;
+    height: 500px; /* Adjusted height */
     width: 100%;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem; /* More rounded corners */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
 }
 
 /* Styles for boarding pass modal */
 .boarding-pass-card {
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 1rem;
     background-color: #f9f9f9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }

@@ -383,7 +383,8 @@ function setupEventListeners() {
         'family-details': { open: ['.nav-family-btn'], close: ['close-family-modal-btn'], onOpen: populateFamilyDetails },
         'gemini-chat': { open: ['.nav-gemini-btn'], close: ['close-gemini-modal-btn'] },
         'story': { close: ['close-story-modal-btn'] },
-        'text-response': { close: ['close-text-response-modal-btn'] }
+        'text-response': { close: ['close-text-response-modal-btn'] },
+        'boarding-pass': { open: ['#show-boarding-passes-btn'], close: ['close-boarding-pass-modal-btn'] }
     };
 
     for (const modalId in modals) {
@@ -507,12 +508,12 @@ function populateFamilyDetails() {
 
 const flightData = {
     outbound: [
-        { from: 'תל אביב (TLV)', to: 'אתונה (ATH)', time: '14:00 - 16:15', airline: 'Israir', flightNum: '6H567', airlineRef: 'ASLZDC', status: 'On Time', checkin: 'https://myisrair.israir.co.il/Account' },
-        { from: 'אתונה (ATH)', to: 'ז\'נבה (GVA)', time: '20:45 - 22:45', airline: 'easyJet', flightNum: 'U21471', airlineRef: 'KB1ZR6H', status: 'On Time', checkin: 'https://www.easyjet.com/en/manage/viewbooking?bookingReference=KB1ZR6H&passengerLogin=true' }
+        { from: 'תל אביב (TLV)', to: 'אתונה (ATH)', date: '2025-08-24', time: '14:00 - 16:15', airline: 'Israir', flightNum: '6H567', airlineRef: 'ASLZDC', status: 'On Time', checkin: 'https://myisrair.israir.co.il/Account', baggage: { checked: '1 x 20kg (דור ליפץ)', carryOn: '1 x 8kg (עדי ליפץ)' }, seats: { 'דור ליפץ': '26B', 'עדי ליפץ': '26A', 'בר ליפץ': '26C', 'רן ליפץ': '26D' } },
+        { from: 'אתונה (ATH)', to: 'ז\'נבה (GVA)', date: '2025-08-24', time: '20:45 - 22:45', airline: 'easyJet', flightNum: 'EZS1472', airlineRef: 'KB1ZR6T', status: 'On Time', checkin: 'https://www.easyjet.com/en/manage/viewbooking?bookingReference=KB1ZR6T&passengerLogin=true', baggage: { checked: '1 x 23kg (כללי)', carryOn: '1 large (דור ליפץ), 3 small' }, seats: { 'דור ליפץ': '28C', 'עדי ליפץ': '28D', 'בר ליפץ': '28E', 'רן ליפץ': '28F' } }
     ],
     inbound: [
-        { from: 'ז\'נבה (GVA)', to: 'אתונה (ATH)', time: '06:20 - 10:05', airline: 'easyJet', flightNum: 'U21472', airlineRef: 'KB1ZR6T', status: 'On Time', checkin: 'https://www.easyjet.com/en/manage/viewbooking?bookingReference=KB1ZR6T&passengerLogin=true' },
-        { from: 'אתונה (ATH)', to: 'תל אביב (TLV)', time: '12:00 - 14:00', airline: 'Blue Bird Airways', flightNum: 'BZ701', airlineRef: '3053CA47', status: 'Delayed', checkin: 'https://booking.bluebirdair.com/booking/3CA477C5-9410-47E3-869D-385AD2531207' }
+        { from: 'ז\'נבה (GVA)', to: 'אתונה (ATH)', date: '2025-08-29', time: '06:20 - 10:05', airline: 'easyJet', flightNum: 'EZS1471', airlineRef: 'KB1ZR6H', status: 'On Time', checkin: 'https://www.easyjet.com/en/manage/viewbooking?bookingReference=KB1ZR6H&passengerLogin=true', baggage: { checked: '1 x 23kg (כללי)', carryOn: '1 large (דור ליפץ), 3 small' }, seats: { 'דור ליפץ': '17A', 'עדי ליפץ': '17B', 'בר ליפץ': '17C', 'רן ליפץ': '17D' } },
+        { from: 'אתונה (ATH)', to: 'תל אביב (TLV)', date: '2025-08-29', time: '12:00 - 14:00', airline: 'Blue Bird Airways', flightNum: 'BZ701', airlineRef: '3053CA47', status: 'Delayed', checkin: 'https://booking.bluebirdair.com/booking/3CA477C5-9410-47E3-869D-385AD2531207', baggage: { checked: '1 x 20kg (דור ליפץ)', carryOn: '1 x 8kg (עדי ליפץ)' }, seats: { 'דור ליפץ': '29A', 'עדי ליפץ': '29B', 'בר ליפץ': '29D', 'רן ליפץ': '29C' } }
     ],
     connections: {
         outbound: '4 שעות ו-30 דקות (העברה עצמית)',

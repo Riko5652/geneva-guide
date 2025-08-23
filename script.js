@@ -794,7 +794,7 @@ async function handleLoadMore() {
         'פארקים וחוץ': 'Parks & Outdoors'
     }[categoryHebrew] || 'activity';
 
-    const prompt = `Find 3 more toddler-friendly activities in Geneva, Switzerland. The category is "${categoryEnglish}". Do not suggest these places which are already known: ${existingNames}. Provide real places with real details. Respond with a JSON array.`;
+    const prompt = `Find 3 more toddler-friendly activities in Geneva, Switzerland. The category is "${categoryEnglish}". Do not suggest these places which are already known: ${existingNames}. For each place, provide the estimated travel time in minutes and the recommended mode of public transport (e.g., "Train + Bus") from the hotel located at "Rue de la Bergère 3, 1217 Meyrin". Provide real places with real details. Respond with a JSON array.`;
 
     const schema = {
         type: "ARRAY",

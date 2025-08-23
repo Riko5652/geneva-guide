@@ -120,6 +120,15 @@
                 ליהנות.</p>
         </section>
 
+        <section id="trip-progress" class="bg-white rounded-2xl p-6 shadow-lg">
+            <h2 class="section-title">📊 ציר הזמן של הטיול</h2>
+            <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
+                <div id="progress-bar-fill" class="bg-teal-500 h-full rounded-full transition-all duration-500"></div>
+                <div id="progress-bar-text" class="absolute inset-0 flex items-center justify-center text-white font-bold text-sm"></div>
+            </div>
+            <div id="progress-bar-info" class="text-center mt-3 text-gray-600"></div>
+        </section>
+
         <section id="bookings" class="bg-secondary rounded-2xl">
             <h2 class="section-title">✈️ מרכז ההזמנות שלכם 🏨</h2>
             <p class="section-subtitle">גישה מהירה לפרטי הטיסות והמלון שלכם.</p>
@@ -835,6 +844,9 @@
             <h3 class="text-2xl font-bold mb-4 text-gray-800">פירוט טיסות מלא</h3>
             <div class="space-y-6" id="flight-details-content">
             </div>
+             <div class="mt-6 text-center">
+                <button id="show-boarding-passes-btn" class="btn-primary px-6 py-3 rounded-lg">הצג כרטיסי עלייה למטוס</button>
+            </div>
         </div>
     </div>
 
@@ -867,6 +879,23 @@
             </div>
         </div>
     </div>
+    
+    <div id="boarding-pass-modal"
+        class="modal fixed inset-0 bg-black bg-opacity-60 z-[102] hidden items-center justify-center p-4">
+         <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col p-4 relative">
+             <button id="close-boarding-pass-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h3 class="text-2xl font-bold mb-4 text-center text-accent">כרטיסי עלייה למטוס</h3>
+            <div id="boarding-pass-content" class="flex-1 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <!-- Boarding passes will be injected here -->
+            </div>
+        </div>
+    </div>
+
 
     <script src="script.js"></script>
 </body>

@@ -2,7 +2,6 @@ body {
     font-family: 'Assistant', sans-serif;
     background-color: #FDFBF7;
     color: #4A4A4A;
-    /* IMPROVEMENT: Increased line-height for better readability */
     line-height: 1.6;
 }
 
@@ -68,7 +67,6 @@ body {
     font-weight: 700;
     color: #333;
     text-align: center;
-    /* IMPROVEMENT: Adjusted margin for better rhythm */
     margin-bottom: 1rem;
 }
 
@@ -76,7 +74,6 @@ body {
     text-align: center;
     max-width: 800px;
     margin: 0 auto 2.5rem auto;
-    /* IMPROVEMENT: Adjusted margin */
     font-size: 1.125rem;
     color: #555;
 }
@@ -118,9 +115,8 @@ body {
 }
 
 section {
-    /* IMPROVEMENT: Increased padding for more breathing room */
-    padding-top: 4rem;
-    padding-bottom: 4rem;
+    padding-top: 2.5rem; /* Reduced padding */
+    padding-bottom: 2.5rem; /* Reduced padding */
     margin-bottom: 1rem;
 }
 
@@ -200,4 +196,26 @@ section {
 
 .progress-bar-fill {
     transition: width 0.5s ease-in-out;
+}
+
+.audio-guide-btn .loader {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+}
+
+/* Styles for the interactive map */
+#map {
+    height: 600px;
+    width: 100%;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Styles for boarding pass modal */
+.boarding-pass-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: #f9f9f9;
 }

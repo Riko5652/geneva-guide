@@ -386,10 +386,8 @@ function displayDailyAttraction() {
 
 // --- Event Listeners and Modal Logic ---
 function setupEventListeners() {
-    // Reset listeners to avoid duplicates
-    const oldBody = document.body;
-    const newBody = oldBody.cloneNode(true);
-    oldBody.parentNode.replaceChild(newBody, oldBody);
+    // This function will re-attach listeners. Using a flag to prevent multiple attachments.
+    if (document.body.dataset.listenersAttached) return;
 
     // Filter Buttons
     document.querySelectorAll('.btn-filter[data-filter]').forEach(button => {
@@ -460,13 +458,29 @@ function setupEventListeners() {
         }
     }
     
-    // Specific buttons
-    document.getElementById('show-boarding-passes-btn')?.addEventListener('click', showBoardingPasses);
+    // Specific buttons that might be inside modals
+    document.body.addEventListener('click', function(event) {
+        if (event.target.id === 'show-boarding-passes-btn') {
+            showBoardingPasses();
+        }
+        // Add other delegated event listeners here if needed
+    });
+    
     document.getElementById('what-to-wear-btn')?.addEventListener('click', handleWhatToWearRequest);
     document.getElementById('generate-custom-plan-btn')?.addEventListener('click', handleCustomPlanRequest);
-    document.querySelectorAll('.gemini-plan-btn').forEach(button => button.addEventListener('click', handlePlanRequest));
-    document.querySelectorAll('.gemini-story-btn').forEach(button => button.addEventListener('click', handleStoryRequest));
-    document.querySelectorAll('.gemini-summary-btn').forEach(button => button.addEventListener('click', handleSummaryRequest));
+    
+    // Event delegation for dynamically created buttons
+    document.body.addEventListener('click', function(event) {
+        if (event.target.classList.contains('gemini-plan-btn')) {
+            handlePlanRequest(event);
+        }
+        if (event.target.classList.contains('gemini-story-btn')) {
+            handleStoryRequest(event);
+        }
+        if (event.target.classList.contains('gemini-summary-btn')) {
+            handleSummaryRequest(event);
+        }
+    });
 
     // Chat
     const chatInput = document.getElementById('chat-input');
@@ -476,8 +490,7 @@ function setupEventListeners() {
     document.getElementById('chat-image-input')?.addEventListener('change', handleChatImageUpload);
     document.getElementById('chat-remove-image-btn')?.addEventListener('click', removeChatImage);
 
-    // Itinerary details need to be populated after dynamic render
-    populateItineraryDetails();
+    document.body.dataset.listenersAttached = 'true';
 }
 
 function setupPackingGuideModal() {
@@ -585,11 +598,18 @@ function populateHotelDetails() {
         <div><strong>מספר הזמנה:</strong> ${hotelData.bookingRef}</div>
         <div><strong>הוזמן ע"י:</strong> ${hotelData.bookedBy}</div>`;
         
-    modal.querySelector('img').src = hotelData.imageUrl;
-    modal.querySelector('img').alt = hotelData.name;
-    modal.querySelector('.font-semibold').textContent = hotelData.name;
-    modal.querySelector('.text-sm').textContent = hotelData.address;
+    const img = modal.querySelector('img');
+    img.src = hotelData.imageUrl;
+    img.alt = hotelData.name;
+
+    const pName = modal.querySelector('.font-semibold');
+    pName.textContent = hotelData.name;
+    const pAddress = pName.nextElementSibling;
+    pAddress.textContent = hotelData.address;
+
     modal.querySelector('#qr-code-img').src = hotelData.qrCodeUrl;
+    modal.querySelector('#room-type').textContent = hotelData.roomType;
+    modal.querySelector('#guests').textContent = hotelData.guests;
 }
 
 function populateFlightDetails() {
@@ -638,6 +658,7 @@ function populateFlightDetails() {
 }
 
 function getStatusClass(status) {
+    if(!status) return 'bg-gray-100 text-gray-800';
     switch (status.toLowerCase()) {
     case 'on time': return 'bg-green-100 text-green-800';
     case 'delayed': return 'bg-red-100 text-red-800';
@@ -713,6 +734,9 @@ function showBoardingPasses() {
                </div>`;
         });
     });
+    const modal = document.getElementById('boarding-pass-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {

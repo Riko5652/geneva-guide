@@ -67,17 +67,87 @@ function loadAndRenderAllData() {
 function renderAllComponents() {
     if (!currentData) return;
     
+    // Call all rendering functions
     fetchAndRenderWeather();
     renderActivities();
+    renderItinerary(); // New function for dynamic itinerary
     initMap();
     setupEventListeners();
     displayDailyAttraction();
-    populateItineraryDetails();
     updateProgressBar();
     setInterval(updateProgressBar, 60000);
 }
 
-// --- FULLY RESTORED UI AND LOGIC FUNCTIONS ---
+// --- DYNAMIC ITINERARY RENDERING ---
+function renderItinerary() {
+    if (!currentData || !currentData.itineraryData) return;
+    const itineraryContainer = document.getElementById('plan'); // Assuming the section has id="plan"
+    if (!itineraryContainer) return;
+
+    // Find the container for the day cards, e.g., the direct child of the section
+    const dayCardsContainer = itineraryContainer.querySelector('.space-y-8');
+    if (!dayCardsContainer) return;
+
+    dayCardsContainer.innerHTML = ''; // Clear any static HTML
+
+    currentData.itineraryData.forEach(dayInfo => {
+        const dayCardHTML = createDayCard(dayInfo);
+        dayCardsContainer.innerHTML += dayCardHTML;
+    });
+}
+
+function createDayCard(dayInfo) {
+    const createPlanSection = (plan) => {
+        if (!plan || !plan.items || plan.items.length === 0) return '';
+        return `
+            <div class="border-t pt-4">
+                <h4 class="font-semibold text-lg text-gray-600">${plan.title}</h4>
+                <ul class="list-disc pr-5 mt-2 space-y-2 text-gray-700">
+                    ${plan.items.map(item => `
+                        <li>
+                            <strong>${item.activityName || ''}</strong> ${item.description}
+                            ${item.activityName ? `<div data-activity-details="${item.activityName}"></div>` : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>`;
+    };
+
+    const dayCard = `
+        <div class="bg-white p-6 rounded-xl shadow-lg border-r-4 border-accent" data-day-index="${dayInfo.dayIndex}">
+            <h3 class="font-bold text-2xl mb-4 text-gray-800">יום ${dayInfo.day} (${dayInfo.dayName}): ${dayInfo.title}</h3>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold text-lg text-accent">${dayInfo.mainPlan.title}</h4>
+                    <ul class="list-disc pr-5 mt-2 space-y-2 text-gray-700">
+                        ${dayInfo.mainPlan.items.map(item => `
+                            <li>
+                                <strong>${item.activityName}</strong>: ${item.description}
+                                <div data-activity-details="${item.activityName}"></div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                ${createPlanSection(dayInfo.alternativePlan)}
+                ${createPlanSection(dayInfo.alternativePlan2)}
+                <div class="border-t pt-4 mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button class="btn-primary py-2 px-4 rounded-lg gemini-plan-btn">✨ תכנן בוקר</button>
+                    <button class="bg-green-500 text-white py-2 px-4 rounded-lg gemini-summary-btn">✨ סכם לילדים</button>
+                    <button class="bg-purple-500 text-white py-2 px-4 rounded-lg gemini-story-btn">✨ סיפור לילה טוב</button>
+                </div>
+                <div class="gemini-plan-result hidden"></div>
+                <div class="border-t pt-4 mt-4 bg-yellow-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-lg text-yellow-800">💡 טיפ להורה סולו</h4>
+                    <p class="mt-2 text-gray-700 text-sm">${dayInfo.soloTip}</p>
+                </div>
+            </div>
+        </div>`;
+    
+    return dayCard;
+}
+
+
+// --- REST OF THE UI AND LOGIC FUNCTIONS (Unchanged from previous correct version) ---
 
 async function fetchAndRenderWeather() {
     const forecastContainer = document.getElementById('weather-forecast');
@@ -247,6 +317,7 @@ function updateProgressBar() {
     document.getElementById('progress-bar-info').textContent = infoText;
 }
 
+
 function populateItineraryDetails() {
     if (!currentData || !currentData.activitiesData) return;
     document.querySelectorAll('[data-day-index]').forEach(dayElement => {
@@ -395,6 +466,9 @@ function setupEventListeners() {
     document.getElementById('chat-attach-btn')?.addEventListener('click', () => document.getElementById('chat-image-input').click());
     document.getElementById('chat-image-input')?.addEventListener('change', handleChatImageUpload);
     document.getElementById('chat-remove-image-btn')?.addEventListener('click', removeChatImage);
+
+    // Itinerary details need to be populated after dynamic render
+    populateItineraryDetails();
 }
 
 function setupPackingGuideModal() {
@@ -425,17 +499,19 @@ function renderChecklist() {
     if (!container || !currentData.packingListData) return;
     let html = '';
     for (const category in currentData.packingListData) {
-        html += `<div class="mb-4">
-            <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
-            <div class="space-y-2">
-                ${currentData.packingListData[category].map(item => `
-                    <label class="flex items-center">
-                        <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-item="${item.name}">
-                        <span class="mr-3 text-gray-700">${item.name}</span>
-                    </label>
-                `).join('')}
-            </div>
-        </div>`;
+        if (Array.isArray(currentData.packingListData[category])) {
+            html += `<div class="mb-4">
+                <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
+                <div class="space-y-2">
+                    ${currentData.packingListData[category].map(item => `
+                        <label class="flex items-center">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-item="${item.name}">
+                            <span class="mr-3 text-gray-700">${item.name}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
     }
     container.innerHTML = html;
     container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
@@ -502,9 +578,56 @@ function populateFlightDetails() {
     if (!currentData || !currentData.flightData) return;
     const container = document.getElementById('flight-details-content');
     const { flightData } = currentData;
-    // ... (rest of the original function logic using flightData)
+    const flightSections = [
+        { title: 'טיסות הלוך - יום ראשון, 24 באוגוסט 2025', flights: flightData.outbound, connection: flightData.connections.outbound },
+        { title: 'טיסות חזור - יום שישי, 29 באוגוסט 2025', flights: flightData.inbound, connection: flightData.connections.inbound }
+    ];
+
+    let html = '';
+    flightSections.forEach(section => {
+        html += `
+           <div>
+               <h4 class="font-bold text-xl mb-3 border-b pb-2 text-accent">${section.title}</h4>
+               <div class="space-y-4 text-sm">
+                   ${section.flights.map((flight, index) => {
+                       const flightKey = (section.title.includes('הלוך') ? 'outbound' : 'inbound') + (index + 1);
+                       const seatKey = 'seat' + flightKey.charAt(0).toUpperCase() + flightKey.slice(1);
+                       return `
+                       <div class="p-2 rounded-lg hover:bg-gray-50 border-b">
+                           <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
+                               <div class="md:col-span-2">
+                                   <p><strong>${flight.from} ← ${flight.to}</strong></p>
+                                   <p class="text-gray-600">${flight.time} | ${flight.airline} ${flight.flightNum}</p>
+                               </div>
+                               <div class="text-center">
+                                   <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(flight.status)}">${flight.status}</span>
+                               </div>
+                               <a href="${flight.checkin}" target="_blank" class="text-white bg-green-500 hover:bg-green-600 text-center py-1 px-2 rounded-md text-xs md:col-span-1">בצע צ'ק אין</a>
+                           </div>
+                           <div class="mt-3 pt-3 border-t text-xs">
+                               <h5 class="font-semibold mb-1">נוסעים ומושבים:</h5>
+                               <ul class="list-disc pr-4">
+                                   ${flightData.passengers.map(p => `<li>${p.name}: <strong>${p[seatKey]}</strong></li>`).join('')}
+                               </ul>
+                           </div>
+                       </div>
+                   `}).join(`<p class="pl-4 border-r-2 border-gray-200 my-2"><strong>קונקשן באתונה:</strong> ${section.connection}</p>`)}
+               </div>
+           </div>
+       `;
+    });
+    container.innerHTML = html;
 }
-// ... similar implementations for populateFamilyDetails, showBoardingPasses, findAndDisplayNearby etc. ...
+
+function getStatusClass(status) {
+    switch (status.toLowerCase()) {
+    case 'on time': return 'bg-green-100 text-green-800';
+    case 'delayed': return 'bg-red-100 text-red-800';
+    case 'canceled': return 'bg-red-200 text-red-900 font-bold';
+    default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
 function populateFamilyDetails() {
     if (!currentData || !currentData.familyData) return;
     const container = document.getElementById('family-details-content');
@@ -517,12 +640,109 @@ function populateFamilyDetails() {
 }
 
 function showBoardingPasses() {
-    // This function requires the flightData from currentData
+    if (!currentData || !currentData.flightData) return;
+    const container = document.getElementById('boarding-pass-content');
+    container.innerHTML = ''; 
+
+    const { flightData } = currentData;
+    const flights = [...flightData.outbound, ...flightData.inbound];
+    const seatMapping = {
+        outbound1: 'seatOutbound1', outbound2: 'seatOutbound2',
+        inbound1: 'seatInbound1', inbound2: 'seatInbound2'
+    };
+
+    flights.forEach((flight, index) => {
+        const flightKey = (index < 2 ? 'outbound' : 'inbound') + (index % 2 + 1);
+        const seatKey = seatMapping[flightKey];
+
+        flightData.passengers.forEach(passenger => {
+            const qrData = `M1LIPETZ/${passenger.name.split(' ')[0]} E${passenger.ticket.replace(/-/g, '')} ${flight.from.substring(flight.from.length - 4, flight.from.length - 1)}${flight.to.substring(flight.to.length - 4, flight.to.length - 1)}${flight.airline.substring(0,2)}${flight.flightNum.padStart(4, '0')} 236Y028C0045 100`;
+
+            container.innerHTML += `
+                <div class="boarding-pass-wallet">
+                    <div class="bp-main">
+                        <div class="bp-header">
+                            <span class="bp-airline">${flight.airline}</span>
+                            <img src="https://placehold.co/40x40/FFFFFF/4A4A4A?text=${flight.airline.charAt(0)}" alt="Airline Logo" class="bp-logo">
+                        </div>
+                        <div class="bp-flight-info">
+                            <div>
+                                <span class="bp-label">${flight.from.substring(flight.from.length - 4, flight.from.length - 1)}</span>
+                                <span class="bp-value-large">${flight.from.split(' (')[0]}</span>
+                           </div>
+                            <div class="bp-plane-icon">✈️</div>
+                            <div>
+                                <span class="bp-label">${flight.to.substring(flight.to.length - 4, flight.to.length - 1)}</span>
+                                <span class="bp-value-large">${flight.to.split(' (')[0]}</span>
+                           </div>
+                       </div>
+                        <div class="bp-passenger-info">
+                            <span class="bp-label">נוסע/ת</span>
+                            <span class="bp-value">${passenger.name}</span>
+                        </div>
+                    </div>
+                    <div class="bp-stub">
+                        <div class="bp-qr-code">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(qrData)}" alt="QR Code">
+                        </div>
+                        <div class="bp-details">
+                            <div><span class="bp-label">טיסה</span><span class="bp-value">${flight.flightNum}</span></div>
+                            <div><span class="bp-label">מושב</span><span class="bp-value">${passenger[seatKey]}</span></div>
+                            <div><span class="bp-label">תאריך</span><span class="bp-value">${flight.date}</span></div>
+                            <div><span class="bp-label">שעת המראה</span><span class="bp-value">${flight.time.split(' - ')[0]}</span></div>
+                       </div>
+                   </div>
+               </div>`;
+        });
+    });
+}
+
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
 }
 
 
 function findAndDisplayNearby() {
-    // This function requires activitiesData from currentData
+    if (!currentData || !currentData.activitiesData) return;
+    const resultsContainer = document.getElementById('nearby-results');
+    resultsContainer.innerHTML = '<p>מאתר את מיקומך...</p>';
+
+    if (!navigator.geolocation) {
+        resultsContainer.innerHTML = '<p>שירותי מיקום אינם נתמכים.</p>';
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+            const nearbyPlaces = currentData.activitiesData
+                .filter(place => ['משחקייה', 'חוץ', 'בית מרקחת'].includes(place.category))
+                .map(place => ({ ...place, calculatedDistance: calculateDistance(latitude, longitude, place.lat, place.lon) }))
+                .sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+
+            const playgrounds = nearbyPlaces.filter(p => ['משחקייה', 'חוץ'].includes(p.category)).slice(0, 5);
+            const pharmacies = nearbyPlaces.filter(p => p.category === 'בית מרקחת').slice(0, 3);
+
+            resultsContainer.innerHTML = `
+               <div>
+                   <h4 class="font-bold text-lg mb-2">משחקיות ופארקים קרובים:</h4>
+                   <ul class="list-disc pr-5 space-y-1">${playgrounds.map(p => `<li><strong>${p.name}</strong> - כ-${p.calculatedDistance.toFixed(1)} ק"מ</li>`).join('')}</ul>
+               </div>
+               <div class="border-t pt-4 mt-4">
+                   <h4 class="font-bold text-lg mb-2">בתי מרקחת קרובים:</h4>
+                   <ul class="list-disc pr-5 space-y-1">${pharmacies.map(p => `<li><strong>${p.name}</strong> - כ-${p.calculatedDistance.toFixed(1)} ק"מ</li>`).join('')}</ul>
+               </div>`;
+        },
+        () => {
+            resultsContainer.innerHTML = '<p>לא ניתן היה לקבל את מיקומך.</p>';
+        }
+    );
 }
 
 
@@ -539,10 +759,8 @@ async function handlePlanRequest(event) {
     const button = event.target;
     const planContainer = button.closest('[data-day-index]');
     const resultContainer = planContainer.querySelector('.gemini-plan-result');
-    const mainActivityElement = planContainer.querySelector('ul li strong');
-    if (!mainActivityElement) return;
-
-    const mainActivityName = mainActivityElement.textContent;
+    const mainActivityName = planContainer.querySelector('h3').textContent.split(': ')[1];
+    
     resultContainer.classList.remove('hidden');
     resultContainer.innerHTML = '<div class="flex justify-center"><div class="loader"></div></div>';
 
@@ -552,13 +770,54 @@ async function handlePlanRequest(event) {
 }
 
 async function handleStoryRequest(event) {
-    // ...
+    const mainActivityName = event.target.closest('[data-day-index]').querySelector('h3').textContent.split(': ')[1];
+    const storyModal = document.getElementById('story-modal');
+    const storyContent = document.getElementById('story-modal-content');
+
+    storyContent.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
+    storyModal.classList.remove('hidden');
+    storyModal.classList.add('flex');
+
+    const prompt = `You are a children's storyteller. Write a short, simple, and happy bedtime story in Hebrew for two toddlers, Bar (a girl) and Ran (a boy), ages 2 and 3. The story should be about their adventure today in Geneva, where they visited ${mainActivityName}. Make it magical and fun.`;
+    const geminiResponse = await callGeminiWithParts([{ text: prompt }]);
+    storyContent.innerHTML = geminiResponse.replace(/\n/g, '<br>');
 }
-async function handleSummaryRequest(event) {
-    // ...
+
+function showTextResponseModal(title, content) {
+    const modal = document.getElementById('text-response-modal');
+    document.getElementById('text-response-modal-title').textContent = title;
+    document.getElementById('text-response-modal-content').innerHTML = content.replace(/\n/g, '<br>');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 }
+
+
 async function handleWhatToWearRequest() {
-    // ...
+    if (!currentData.weatherData) {
+        showTextResponseModal("שגיאה", "נתוני מזג האוויר עדיין לא נטענו. נסה שוב בעוד רגע.");
+        return;
+    }
+    showTextResponseModal("✨ מה ללבוש היום? ✨", '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>');
+
+    const todayWeather = currentData.weatherData.daily;
+    const weatherDesc = getWeatherInfo(todayWeather.weathercode[0]).description;
+    const tempMax = Math.round(todayWeather.temperature_2m_max[0]);
+    const tempMin = Math.round(todayWeather.temperature_2m_min[0]);
+
+    const prompt = `Based on the weather in Geneva today (${weatherDesc}, high of ${tempMax}°C, low of ${tempMin}°C), what should a family with a 2-year-old and a 3-year-old wear for a day out? Provide a simple, bulleted list in Hebrew, using emojis.`;
+    const geminiResponse = await callGeminiWithParts([{ text: prompt }]);
+    showTextResponseModal('✨ מה ללבוש היום? ✨', geminiResponse);
+}
+
+async function handleSummaryRequest(event) {
+    const title = event.target.closest('[data-day-index]').querySelector('h3').textContent;
+    const mainPlan = event.target.closest('[data-day-index]').querySelector('.space-y-4').textContent;
+
+    showTextResponseModal(`✨ סיכום לילדים - ${title} ✨`, '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>');
+
+    const prompt = `Please create a very short, fun, and exciting summary of this daily plan for a 2 and 3-year-old. Use simple Hebrew words and emojis. Plan: ${mainPlan}`;
+    const geminiResponse = await callGeminiWithParts([{ text: prompt }]);
+    showTextResponseModal(`✨ סיכום לילדים - ${title} ✨`, geminiResponse);
 }
 async function handleCustomPlanRequest() {
     // ...

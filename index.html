@@ -134,6 +134,24 @@
             <div id="progress-bar-info" class="text-center mt-3 text-gray-600"></div>
         </section>
 
+        <!-- NEW: Photo Gallery Section -->
+        <section id="photo-gallery" class="bg-secondary rounded-2xl">
+            <h2 class="section-title">🖼️ אלבום הטיול שלכם</h2>
+            <p class="section-subtitle">הדביקו קישור לאלבום שיתופי מ-Google Photos כדי לראות את כל הזכרונות שלכם כאן.</p>
+            <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2 mb-6">
+                <input type="url" id="photos-link-input" class="flex-1 border border-gray-300 rounded-lg py-3 px-4" placeholder="הדבק כאן קישור לאלבום מ-Google Photos...">
+                <button id="load-photos-btn" class="btn-primary px-6 py-3 rounded-lg">טען תמונות</button>
+            </div>
+            <div id="photos-grid-container" class="max-w-5xl mx-auto">
+                <div id="photos-grid-placeholder" class="text-center text-gray-500 py-12">
+                    <p>התמונות מהטיול יופיעו כאן...</p>
+                </div>
+                 <div id="photos-grid" class="hidden grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Photos will be injected here by JavaScript -->
+                </div>
+            </div>
+        </section>
+
         <!-- Time Sensitive Actions Section -->
         <section id="current-actions" class="hidden bg-yellow-50 border-r-4 border-yellow-400 rounded-2xl">
             <div class="p-8">
@@ -913,4 +931,3 @@
 </body>
 
 </html>
-

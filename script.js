@@ -19,8 +19,8 @@ async function initApp() {
         // Fetch the configuration from our secure serverless function using the API redirect
         const response = await fetch('/api/get-config');
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(`Failed to fetch Firebase config: ${err.error}`);
+            const errText = await response.text();
+            throw new Error(`Failed to fetch Firebase config: ${errText}`);
         }
         const firebaseConfig = await response.json();
 
@@ -45,7 +45,8 @@ function initializeAppLogic() {
             userId = user.uid;
             // Load all data from Firestore and then render the UI
             loadAndRenderAllData();
-            loadChatHistory(userId);
+            // The problematic function call below is now removed.
+            // loadChatHistory(userId); 
         } else {
             signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
         }
@@ -70,46 +71,65 @@ function loadAndRenderAllData() {
             renderAllComponents();
         } else {
             console.error("Guide data document not found in Firestore. Did you run the seed script?");
-            document.getElementById('itinerary-container').innerText = 'Data not found.';
-            document.getElementById('activities-grid').innerText = 'Data not found.';
+            const mainContent = document.querySelector('main');
+            if (mainContent) {
+                 mainContent.innerHTML = '<p class="text-center text-red-500 font-bold p-8">Data not found in database. Please run the seed script.</p>';
+            }
         }
     }, (error) => console.error("Error fetching guide data:", error));
 }
 
 function renderAllComponents() {
     if (!currentData) return;
+    
+    // Call all rendering functions that depend on the data
     renderActivities();
-    //... call all other render functions here
     updateProgressBar(); // Initial call with correct dates
     initMap();
+    // Add other rendering functions here as needed
+    // e.g., populateFlightDetails(), populateFamilyDetails(), etc.
 }
 
-// ... Rest of your functions (renderActivities, handleChatSend, updateProgressBar, etc.) remain here
-// Make sure to add checks for `if (!currentData) return;` at the top of functions that rely on it.
 
-async function fetchAndRenderWeather() {
-    // This function is now safe to call
-    // ... same weather fetching logic
+// --- DUMMY/PLACEHOLDER FUNCTIONS (to be replaced with actual logic) ---
+// Note: Many of these were in the original HTML but need to be defined here.
+
+function fetchAndRenderWeather() {
+    console.log("Fetching weather...");
+    // Actual weather fetching logic would go here
+    const weatherContainer = document.getElementById('weather-forecast');
+    if (weatherContainer) weatherContainer.innerHTML = "<p>Weather data will be loaded here.</p>";
 }
 
 function updateProgressBar() {
-    // This function needs flight data, so ensure it's available
-    if (!currentData || !currentData.flightData) return;
-    // ... same progress bar logic
+    if (!currentData || !currentData.flightData) {
+        console.log("Waiting for flight data to update progress bar...");
+        return;
+    }
+    // Actual progress bar logic using currentData.flightData
+    const progressBarText = document.getElementById('progress-bar-text');
+    if (progressBarText) progressBarText.textContent = "Trip progress loaded.";
 }
 
 function initMap() {
-    if (map || !currentData || !currentData.activitiesData) return;
-    // ... same map initialization logic
-}
-
-
-// ... include all your other functions ...
-
-// Make sure to define setupEventListeners, renderActivities, handleChatSend, etc.
-
-function setupEventListeners() {
-    // Add your event listeners here
+    if (map) return; // a map has been initialized
+    if (!currentData || !currentData.activitiesData) {
+        console.log("Waiting for activities data to initialize map...");
+        return;
+    }
+    const mapContainer = document.getElementById('map');
+    if (mapContainer && L) { // Check if Leaflet is loaded
+        console.log("Initializing map...");
+        map = L.map('map').setView([46.204391, 6.143158], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // Add markers based on data
+        currentData.activitiesData.forEach(activity => {
+             if (activity.lat && activity.lon) {
+                L.marker([activity.lat, activity.lon]).addTo(map).bindPopup(activity.name);
+             }
+        });
+    }
 }
 
 function renderActivities() {
@@ -120,23 +140,46 @@ function renderActivities() {
 }
 
 function createActivityCard(activity) {
-    // Your logic to create an activity card HTML string
-    return `<div>${activity.name}</div>`; // Placeholder
+    // A simplified card for demonstration
+    return `
+        <div class="card bg-white p-4 rounded shadow">
+            <h3 class="font-bold">${activity.name}</h3>
+            <p>${activity.description}</p>
+        </div>
+    `;
 }
 
+function setupEventListeners() {
+    console.log("Setting up event listeners...");
+    // A real app would have all button/modal listeners here.
+    // Example:
+    document.body.addEventListener('click', (e) => {
+        if (e.target.matches('.nav-gemini-btn')) {
+            const modal = document.getElementById('gemini-chat-modal');
+            if (modal) modal.classList.add('flex');
+        }
+        if (e.target.matches('#close-gemini-modal-btn')) {
+             const modal = document.getElementById('gemini-chat-modal');
+            if (modal) modal.classList.remove('flex');
+        }
+    });
+}
 
 // --- API CALLS ---
 async function callGeminiWithParts(parts) {
     try {
-        // Use the API redirect for the Gemini function as well
         const response = await fetch('/api/gemini', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts }] })
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API error: ${response.status} ${errorText}`);
+        }
         const result = await response.json();
-        return result.text;
+        // Assuming the serverless function now returns the text directly in a `text` property
+        return result.text || "No text found in response.";
     } catch (error) {
         console.error("Error calling serverless function:", error);
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";

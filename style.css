@@ -98,6 +98,14 @@ body {
     transition: opacity 0.3s ease-in-out;
 }
 
+.modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 20;
+}
+
+/* Reduced spacing between sections for a tighter look */
 section {
     padding-top: 2rem;
     padding-bottom: 2rem;
@@ -177,45 +185,47 @@ section {
     transition: width 0.5s ease-in-out;
 }
 
+/* Styles for the interactive map */
 #map {
-    height: 500px; 
+    height: 500px; /* Adjusted height */
     width: 100%;
-    border-radius: 0.75rem;
+    border-radius: 0.75rem; /* More rounded corners */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     border: 1px solid #ddd;
 }
 
-/* New Boarding Pass Wallet Style */
+/* New Boarding Pass Styles (Wallet-inspired) */
 .boarding-pass-wallet {
     background-color: #ffffff;
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
 }
 
 .bp-main {
-    padding: 16px;
+    padding: 1.25rem;
 }
 
 .bp-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 1.5rem;
 }
 
 .bp-airline {
-    font-weight: 600;
-    font-size: 1.1rem;
+    font-weight: 700;
+    font-size: 1.25rem;
     color: #333;
 }
 
 .bp-logo {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     object-fit: cover;
 }
 
@@ -224,58 +234,80 @@ section {
     align-items: center;
     justify-content: space-between;
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 1.5rem;
 }
 
-.bp-label {
-    font-size: 0.75rem;
+.bp-flight-info .bp-label {
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #888;
-    text-transform: uppercase;
+}
+
+.bp-flight-info .bp-value-large {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
     display: block;
 }
 
-.bp-value-large {
-    font-size: 1.75rem;
-    font-weight: 300;
-    color: #333;
-    line-height: 1;
-}
-
 .bp-plane-icon {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     color: #aaa;
+    flex-shrink: 0;
+    margin: 0 1rem;
 }
 
 .bp-passenger-info {
     text-align: right;
 }
 
-.bp-value {
-    font-weight: 500;
+.bp-passenger-info .bp-label {
+    font-size: 0.75rem;
+    color: #888;
+    display: block;
+    margin-bottom: -0.25rem;
+}
+
+.bp-passenger-info .bp-value {
+    font-size: 1.125rem;
+    font-weight: 600;
     color: #333;
 }
 
 .bp-stub {
-    border-top: 2px dashed #e0e0e0;
-    padding: 12px 16px;
+    background-color: #f7f7f7;
+    border-top: 2px dashed #ddd;
     display: flex;
     align-items: center;
-    gap: 12px;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
 }
 
 .bp-qr-code img {
-    border-radius: 6px;
+    border-radius: 8px;
+    display: block;
 }
 
 .bp-details {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 0.5rem 1.5rem;
     width: 100%;
-    font-size: 0.8rem;
 }
 
 .bp-details > div {
     display: flex;
     flex-direction: column;
 }
+
+.bp-details .bp-label {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+.bp-details .bp-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+}
+

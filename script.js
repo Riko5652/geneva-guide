@@ -108,6 +108,45 @@ document.addEventListener('DOMContentLoaded', () => {
 // NEW & UPDATED CORE FEATURES
 // =================================================================================
 
+function handlePhotoAlbumLoad() {
+    const linkInput = document.getElementById('photos-link-input');
+    const photoGrid = document.getElementById('photos-grid');
+    const placeholder = document.getElementById('photos-grid-placeholder');
+    const url = linkInput.value.trim();
+
+    if (!url || !url.startsWith('http')) {
+        alert('אנא הזינו קישור תקין.');
+        return;
+    }
+
+    placeholder.innerHTML = '<div class="flex justify-center"><div class="loader"></div></div>';
+    placeholder.classList.remove('hidden');
+    photoGrid.classList.add('hidden');
+    photoGrid.innerHTML = '';
+
+    // Simulate fetching photos
+    setTimeout(() => {
+        placeholder.classList.add('hidden');
+        photoGrid.classList.remove('hidden');
+        photoGrid.classList.add('grid');
+        
+        // Add a message about the simulation
+        const infoHeader = document.createElement('div');
+        infoHeader.className = 'col-span-full bg-blue-50 text-blue-800 p-3 rounded-lg text-sm text-center';
+        infoHeader.innerHTML = `זוהי תצוגה מקדימה בלבד. לצפייה באלבום המלא, <a href="${url}" target="_blank" class="font-bold underline">לחצו כאן</a>.`;
+        photoGrid.appendChild(infoHeader);
+
+        // Display placeholder images
+        for (let i = 0; i < 8; i++) {
+            const photoEl = document.createElement('div');
+            photoEl.className = 'aspect-square bg-gray-200 rounded-lg overflow-hidden';
+            photoEl.innerHTML = `<img src="https://placehold.co/400x400/E0D8CC/4A4A4A?text=Photo+${i+1}" class="w-full h-full object-cover animate-fade-in" alt="תמונה מהאלבום">`;
+            photoGrid.appendChild(photoEl);
+        }
+    }, 1500);
+}
+
+
 function initMap() {
     if (map) return; 
 
@@ -647,6 +686,9 @@ function setupEventListeners() {
 
     document.getElementById('what-to-wear-btn').addEventListener('click', handleWhatToWearRequest);
     document.getElementById('generate-custom-plan-btn').addEventListener('click', handleCustomPlanRequest);
+    
+    // NEW: Event listener for the photo gallery button
+    document.getElementById('load-photos-btn').addEventListener('click', handlePhotoAlbumLoad);
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -1021,3 +1063,4 @@ async function handleCustomPlanRequest() {
     const geminiResponse = await callGeminiWithParts([{ text: fullPrompt }]);
     resultContainer.innerHTML = `<div class="gemini-plan-result">${geminiResponse.replace(/\n/g, '<br>')}</div>`;
 }
+

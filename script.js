@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPackingGuideModal();
     updateProgressBar();
     displayCurrentActions();
-    setInterval(updateProgressBar, 60000);
+    setInterval(updateProgressBar, 60000); // Update every minute
 });
 
 // =================================================================================
@@ -124,7 +124,7 @@ function handlePhotoAlbumLoad() {
     photoGrid.classList.add('hidden');
     photoGrid.innerHTML = '';
 
-    // Simulate fetching photos
+    // Simulate fetching photos as we cannot directly access Google Photos albums
     setTimeout(() => {
         placeholder.classList.add('hidden');
         photoGrid.classList.remove('hidden');
@@ -148,7 +148,7 @@ function handlePhotoAlbumLoad() {
 
 
 function initMap() {
-    if (map) return; 
+    if (map) return; // Initialize map only once
 
     const hotelLocation = { lat: 46.2183, lon: 6.0744, name: "Mercure Hotel Meyrin" };
     map = L.map('map').setView([hotelLocation.lat, hotelLocation.lon], 12);
@@ -199,6 +199,8 @@ function updateProgressBar() {
     ];
 
     const now = new Date();
+    // For demonstration, let's pretend today is a date during the trip timeline
+    // const now = new Date('2025-08-24T18:00:00'); 
     const start = new Date(tripTimeline[0].date);
     const end = new Date(tripTimeline[tripTimeline.length - 1].date);
 
@@ -643,6 +645,9 @@ function setupEventListeners() {
         'flights-details': { open: ['#open-flights-modal-btn'], onOpen: populateFlightDetails },
         'family-details': { open: ['.nav-family-btn'], onOpen: populateFamilyDetails },
         'gemini-chat': { open: ['.nav-gemini-btn'] },
+        'story': { open: ['.gemini-story-btn'], onOpen: handleStoryRequest },
+        'text-response': {},
+        'boarding-pass': {open: ['#show-boarding-passes-btn'], onOpen: showBoardingPasses}
     };
 
     for (const modalId in modals) {
@@ -654,10 +659,13 @@ function setupEventListeners() {
         if (config.open) {
             config.open.forEach(selector => {
                 document.querySelectorAll(selector).forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        modalElement.classList.remove('hidden');
-                        modalElement.classList.add('flex');
-                        if (config.onOpen) config.onOpen();
+                    btn.addEventListener('click', (e) => {
+                         if (config.onOpen) {
+                            config.onOpen(e); // Pass event to handler if needed
+                        } else {
+                            modalElement.classList.remove('hidden');
+                            modalElement.classList.add('flex');
+                        }
                     });
                 });
             });
@@ -670,8 +678,6 @@ function setupEventListeners() {
             e.target.closest('.modal').classList.remove('flex');
         });
     });
-    
-    document.getElementById('show-boarding-passes-btn').addEventListener('click', showBoardingPasses);
 
     const chatInput = document.getElementById('chat-input');
     document.getElementById('chat-send-btn').addEventListener('click', handleChatSend);
@@ -681,7 +687,6 @@ function setupEventListeners() {
     document.getElementById('chat-remove-image-btn').addEventListener('click', removeChatImage);
 
     document.querySelectorAll('.gemini-plan-btn').forEach(button => button.addEventListener('click', handlePlanRequest));
-    document.querySelectorAll('.gemini-story-btn').forEach(button => button.addEventListener('click', handleStoryRequest));
     document.querySelectorAll('.gemini-summary-btn').forEach(button => button.addEventListener('click', handleSummaryRequest));
 
     document.getElementById('what-to-wear-btn').addEventListener('click', handleWhatToWearRequest);

@@ -189,13 +189,6 @@ section {
     border: 1px solid #ddd;
 }
 
-.boarding-pass-card {
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    padding: 1rem;
-    background-color: #f9f9f9;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
 .boarding-pass-wallet {
     background-color: #ffffff;
     border-radius: 16px;

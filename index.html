@@ -134,18 +134,21 @@
             <div id="progress-bar-info" class="text-center mt-3 text-gray-600"></div>
         </section>
 
-        <!-- Photo Gallery Section -->
+        <!-- UPDATED: Photo Gallery Section -->
         <section id="photo-gallery" class="bg-secondary rounded-2xl">
             <h2 class="section-title">🖼️ אלבום הטיול שלכם</h2>
-            <div class="max-w-3xl mx-auto flex flex-col sm:flex-row gap-2 mb-6">
-                <input type="text" id="photos-link-input" class="flex-1 border border-gray-300 rounded-lg py-3 px-4" placeholder="הדבק כאן קישור ציבורי לאלבום ב-Google Photos...">
-                <button id="load-photos-btn" class="btn-primary px-6 py-3 rounded-lg">שמור קישור לאלבום</button>
+            <div class="max-w-3xl mx-auto text-center text-sm mb-4 bg-blue-50 text-blue-800 p-3 rounded-lg">
+                <strong>הוראות:</strong> כדי להטמיע את אלבום התמונות, צרו מצגת ב-Google Slides, לחצו על "קובץ" > "שתף" > "פרסם באינטרנט", העתיקו את **כל** קוד ההטמעה (`<iframe>...</iframe>`) והדביקו אותו כאן.
             </div>
-            <div id="photos-display-area" class="max-w-5xl mx-auto">
+            <div class="max-w-3xl mx-auto flex flex-col sm:flex-row gap-2 mb-6">
+                <input type="text" id="photos-embed-input" class="flex-1 border border-gray-300 rounded-lg py-3 px-4" placeholder="הדבק כאן את קוד ההטמעה מ-Google Slides...">
+                <button id="load-photos-btn" class="btn-primary px-6 py-3 rounded-lg">הטען ושמור אלבום</button>
+            </div>
+            <div id="photos-container" class="max-w-5xl mx-auto">
                  <div id="photos-placeholder" class="aspect-video bg-gray-200 rounded-lg flex items-center justify-center p-4">
-                    <p class="text-gray-500 text-center">האלבום שלכם יוצג כאן לאחר שמירת הקישור.</p>
+                    <p class="text-gray-500 text-center">האלבום שלכם יוצג כאן לאחר הדבקת קוד ההטמעה.</p>
                  </div>
-                 <!-- Visual link will be injected here -->
+                 <!-- Iframe and button will be injected here -->
             </div>
         </section>
 
@@ -950,4 +953,3 @@
 </body>
 
 </html>
-

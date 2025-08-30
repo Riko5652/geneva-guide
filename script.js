@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initApp() {
     try {
-        // Fetch the configuration from our secure serverless function
-        const response = await fetch('/.netlify/functions/get-config');
+        // Fetch the configuration from our secure serverless function using the API redirect
+        const response = await fetch('/api/get-config');
         if (!response.ok) {
             const err = await response.json();
             throw new Error(`Failed to fetch Firebase config: ${err.error}`);
@@ -106,12 +106,30 @@ function initMap() {
 
 // ... include all your other functions ...
 
-// Make sure to define setupEventListeners, handleChatSend, etc.
+// Make sure to define setupEventListeners, renderActivities, handleChatSend, etc.
+
+function setupEventListeners() {
+    // Add your event listeners here
+}
+
+function renderActivities() {
+    if (!currentData || !currentData.activitiesData) return;
+    const grid = document.getElementById('activities-grid');
+    if (!grid) return;
+    grid.innerHTML = currentData.activitiesData.map(activity => createActivityCard(activity)).join('');
+}
+
+function createActivityCard(activity) {
+    // Your logic to create an activity card HTML string
+    return `<div>${activity.name}</div>`; // Placeholder
+}
+
 
 // --- API CALLS ---
 async function callGeminiWithParts(parts) {
     try {
-        const response = await fetch('/.netlify/functions/gemini', {
+        // Use the API redirect for the Gemini function as well
+        const response = await fetch('/api/gemini', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ role: "user", parts }] })

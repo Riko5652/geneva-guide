@@ -105,6 +105,7 @@ body {
     z-index: 20;
 }
 
+
 /* Reduced spacing between sections for a tighter look */
 section {
     padding-top: 2rem;
@@ -194,38 +195,24 @@ section {
     border: 1px solid #ddd;
 }
 
-/* Styles for the new Photo Gallery */
-#photos-grid img {
-    transition: transform 0.3s ease-in-out;
+/* Styles for Photo Gallery */
+#photos-container {
+    min-height: 300px;
+    transition: background-color 0.3s;
 }
-
-#photos-grid img:hover {
-    transform: scale(1.05);
-}
-
-@keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.animate-fade-in {
-    animation: fade-in 0.5s ease-in-out;
-}
-
 
 /* New Boarding Pass Styles (Wallet-inspired) */
 .boarding-pass-wallet {
     background-color: #ffffff;
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid #e5e5e5;
 }
 
 .bp-main {
-    padding: 1.25rem;
+    padding: 1.5rem;
 }
 
 .bp-header {
@@ -236,8 +223,7 @@ section {
 }
 
 .bp-airline {
-    font-weight: 700;
-    font-size: 1.25rem;
+    font-weight: bold;
     color: #333;
 }
 
@@ -252,43 +238,35 @@ section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    text-align: center;
     margin-bottom: 1.5rem;
+    text-align: center;
 }
 
-.bp-flight-info .bp-label {
-    font-size: 1.5rem;
-    font-weight: 700;
+.bp-label {
+    font-size: 0.75rem;
     color: #888;
-}
-
-.bp-flight-info .bp-value-large {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #333;
+    text-transform: uppercase;
     display: block;
 }
 
-.bp-plane-icon {
+.bp-value-large {
     font-size: 1.75rem;
-    color: #aaa;
-    flex-shrink: 0;
+    font-weight: 700;
+    color: #333;
+}
+
+.bp-plane-icon {
+    font-size: 1.5rem;
+    color: #888;
     margin: 0 1rem;
 }
 
 .bp-passenger-info {
-    text-align: right;
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
 }
 
-.bp-passenger-info .bp-label {
-    font-size: 0.75rem;
-    color: #888;
-    display: block;
-    margin-bottom: -0.25rem;
-}
-
-.bp-passenger-info .bp-value {
-    font-size: 1.125rem;
+.bp-value {
     font-weight: 600;
     color: #333;
 }
@@ -296,38 +274,26 @@ section {
 .bp-stub {
     background-color: #f7f7f7;
     border-top: 2px dashed #ddd;
+    padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
-    padding: 1rem 1.25rem;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .bp-qr-code img {
-    border-radius: 8px;
-    display: block;
+    border-radius: 4px;
 }
 
 .bp-details {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem 1.5rem;
-    width: 100%;
+    grid-template-columns: 1fr 1fr;
+    gap-x: 2rem;
+    gap-y: 0.5rem;
+    font-size: 0.875rem;
 }
 
 .bp-details > div {
     display: flex;
     flex-direction: column;
 }
-
-.bp-details .bp-label {
-    font-size: 0.75rem;
-    color: #888;
-}
-
-.bp-details .bp-value {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #333;
-}
-
 

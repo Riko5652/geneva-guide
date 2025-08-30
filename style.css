@@ -194,6 +194,25 @@ section {
     border: 1px solid #ddd;
 }
 
+/* Styles for the new Photo Gallery */
+#photos-grid img {
+    transition: transform 0.3s ease-in-out;
+}
+
+#photos-grid img:hover {
+    transform: scale(1.05);
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.5s ease-in-out;
+}
+
+
 /* New Boarding Pass Styles (Wallet-inspired) */
 .boarding-pass-wallet {
     background-color: #ffffff;
@@ -310,4 +329,5 @@ section {
     font-weight: 600;
     color: #333;
 }
+
 

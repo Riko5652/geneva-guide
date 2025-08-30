@@ -469,12 +469,18 @@ function updatePackingProgress() {
     let total = 0;
     let checked = 0;
     for (const category in currentData.packingListData) {
-        total += currentData.packingListData[category].length;
-        checked += currentData.packingListData[category].filter(item => item.checked).length;
+        // Defensive check: ensure the category is an array before processing
+        if (Array.isArray(currentData.packingListData[category])) {
+            total += currentData.packingListData[category].length;
+            checked += currentData.packingListData[category].filter(item => item.checked).length;
+        } else {
+            console.warn(`Data for packing category "${category}" is not an array, skipping progress calculation.`);
+        }
     }
     const percentage = total > 0 ? (checked / total) * 100 : 0;
     progressBar.style.width = percentage + '%';
 }
+
 
 
 function renderLuggage() {

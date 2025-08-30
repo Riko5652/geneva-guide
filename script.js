@@ -1,18 +1,17 @@
 // Firebase Imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp, addDoc, collection, query, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp, addDoc, collection, query, setDoc, arrayUnion, arrayRemove, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // Global State
-let db, auth, storage, userId, unsubscribeChat;
+let db, auth, storage, userId;
 let currentData = null; // This will hold all our dynamic data from Firestore
 let map = null;
 let currentCategoryFilter = 'all';
 let currentTimeFilter = 'all';
-let chatImageBase64 = null;
-let suitcaseImageBase64 = null;
-let itemsImageBase64 = null;
+let displayedActivitiesCount = 6; // Initial number of activities to show
+const ACTIVITIES_INCREMENT = 6; // How many to load when "Load More" is clicked
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -71,7 +70,10 @@ function renderAllComponents() {
     fetchAndRenderWeather();
     renderActivities();
     renderItinerary(); 
-    renderBookingInfo(); // Added this to render booking refs
+    renderBookingInfo();
+    renderPhotoAlbum();
+    renderBulletinBoard();
+    renderExpenses();
     initMap();
     setupEventListeners();
     displayDailyAttraction();
@@ -79,7 +81,8 @@ function renderAllComponents() {
     setInterval(updateProgressBar, 60000);
 }
 
-// --- DYNAMIC ITINERARY RENDERING ---
+// --- DYNAMIC RENDERING FUNCTIONS ---
+
 function renderItinerary() {
     if (!currentData || !currentData.itineraryData) return;
     const itineraryContainer = document.getElementById('plan');
@@ -95,23 +98,29 @@ function renderItinerary() {
         dayCardsContainer.innerHTML += dayCardHTML;
     });
     
-    // After rendering the itinerary, populate the details inside them
     populateItineraryDetails();
 }
 
 function createDayCard(dayInfo) {
-    const createPlanSection = (plan) => {
+    const createPlanSection = (plan, planType, dayIndex) => {
         if (!plan || !plan.items || plan.items.length === 0) return '';
         return `
             <div class="border-t pt-4">
                 <h4 class="font-semibold text-lg text-gray-600">${plan.title}</h4>
                 <ul class="list-disc pr-5 mt-2 space-y-2 text-gray-700">
-                    ${plan.items.map(item => `
-                        <li>
-                            <strong>${item.activityName || ''}</strong> ${item.description}
-                            ${item.activityName ? `<div data-activity-details="${item.activityName}"></div>` : ''}
+                    ${plan.items.map((item, itemIndex) => {
+                        const activity = currentData.activitiesData.find(a => a.id === item.activityId) || { name: item.activityName || "פעילות מיוחדת" };
+                        return `
+                        <li class="flex justify-between items-center">
+                            <span>
+                                <strong>${activity.name}</strong>: ${item.description}
+                                <div data-activity-details="${activity.name}"></div>
+                            </span>
+                            <button class="swap-activity-btn text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded-full" data-day-index="${dayIndex}" data-plan-type="${planType}" data-item-index="${itemIndex}">
+                                החלף <i class="fas fa-exchange-alt"></i>
+                            </button>
                         </li>
-                    `).join('')}
+                    `}).join('')}
                 </ul>
             </div>`;
     };
@@ -120,19 +129,28 @@ function createDayCard(dayInfo) {
         <div class="bg-white p-6 rounded-xl shadow-lg border-r-4 border-accent" data-day-index="${dayInfo.dayIndex}">
             <h3 class="font-bold text-2xl mb-4 text-gray-800">יום ${dayInfo.day} (${dayInfo.dayName}): ${dayInfo.title}</h3>
             <div class="space-y-4">
-                <div>
+                 <div>
                     <h4 class="font-semibold text-lg text-accent">${dayInfo.mainPlan.title}</h4>
                     <ul class="list-disc pr-5 mt-2 space-y-2 text-gray-700">
-                        ${dayInfo.mainPlan.items.map(item => `
-                            <li>
-                                <strong>${item.activityName}</strong>: ${item.description}
-                                <div data-activity-details="${item.activityName}"></div>
+                        ${dayInfo.mainPlan.items.map((item, itemIndex) => {
+                             const activity = currentData.activitiesData.find(a => a.id === item.activityId) || { name: item.activityName || "פעילות מיוחדת" };
+                            return `
+                            <li class="flex justify-between items-center">
+                                <span>
+                                    <strong>${activity.name}</strong>: ${item.description}
+                                    <div data-activity-details="${activity.name}"></div>
+                                </span>
+                                <button class="swap-activity-btn text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded-full" data-day-index="${dayInfo.dayIndex}" data-plan-type="mainPlan" data-item-index="${itemIndex}">
+                                    החלף <i class="fas fa-exchange-alt"></i>
+                                </button>
                             </li>
-                        `).join('')}
+                        `}).join('')}
                     </ul>
                 </div>
-                ${createPlanSection(dayInfo.alternativePlan)}
-                ${createPlanSection(dayInfo.alternativePlan2)}
+
+                ${createPlanSection(dayInfo.alternativePlan, 'alternativePlan', dayInfo.dayIndex)}
+                ${createPlanSection(dayInfo.alternativePlan2, 'alternativePlan2', dayInfo.dayIndex)}
+                
                 <div class="border-t pt-4 mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button class="btn-primary py-2 px-4 rounded-lg gemini-plan-btn">✨ תכנן בוקר</button>
                     <button class="bg-green-500 text-white py-2 px-4 rounded-lg gemini-summary-btn">✨ סכם לילדים</button>
@@ -147,7 +165,93 @@ function createDayCard(dayInfo) {
         </div>`;
 }
 
-// --- UI AND LOGIC FUNCTIONS ---
+function renderPhotoAlbum() {
+    if (!currentData || !currentData.photoAlbum) return;
+    const carouselInner = document.getElementById('carousel-inner');
+    carouselInner.innerHTML = '';
+    if (currentData.photoAlbum.length === 0) {
+        carouselInner.innerHTML = `<div class="w-full flex-shrink-0 h-64 bg-gray-200 flex items-center justify-center"><span class="text-gray-500">העלו תמונות מהטיול!</span></div>`;
+    } else {
+        currentData.photoAlbum.forEach(photo => {
+            carouselInner.innerHTML += `
+                <div class="w-full flex-shrink-0">
+                    <img src="${photo.url}" class="w-full h-64 object-contain">
+                </div>
+            `;
+        });
+    }
+}
+
+function renderBulletinBoard() {
+    if (!currentData || !currentData.bulletinBoard) return;
+    const messagesContainer = document.getElementById('bulletin-messages');
+    messagesContainer.innerHTML = '';
+    currentData.bulletinBoard.slice().sort((a,b) => b.timestamp - a.timestamp).forEach(msg => {
+        messagesContainer.innerHTML += `
+            <div class="bg-yellow-100 p-3 rounded-md shadow-sm">
+                <p class="text-sm">${msg.text}</p>
+                <p class="text-xs text-gray-500 text-left mt-1">${new Date(msg.timestamp).toLocaleString('he-IL')}</p>
+            </div>
+        `;
+    });
+}
+
+function renderExpenses() {
+    if (!currentData || !currentData.expenses) return;
+    const expenseList = document.getElementById('expense-list');
+    const expenseTotal = document.getElementById('expense-total');
+    expenseList.innerHTML = '';
+    let total = 0;
+    currentData.expenses.forEach(exp => {
+        total += Number(exp.amount);
+        expenseList.innerHTML += `
+            <div class="flex justify-between items-center p-2 border-b">
+                <span>${exp.desc} <span class="text-xs text-gray-500">(${exp.category})</span></span>
+                <span>${exp.amount} CHF</span>
+            </div>
+        `;
+    });
+    expenseTotal.textContent = `${total.toFixed(2)} CHF`;
+}
+
+
+function renderActivities() {
+    if (!currentData || !currentData.activitiesData) return;
+    const activitiesGrid = document.getElementById('activities-grid');
+    const loadMoreContainer = document.getElementById('load-more-container');
+    
+    const filteredActivities = currentData.activitiesData.filter(activity => {
+        if (activity.category === 'בית מרקחת') return false;
+        const categoryMatch = currentCategoryFilter === 'all' || activity.category === currentCategoryFilter;
+        let timeMatch = false;
+        if (currentTimeFilter === 'all') { timeMatch = true; }
+        else {
+            const time = parseInt(currentTimeFilter);
+            if (time === 20) timeMatch = activity.time <= 20;
+            else if (time === 40) timeMatch = activity.time > 20 && activity.time <= 40;
+            else if (time === 60) timeMatch = activity.time > 40;
+        }
+        return categoryMatch && timeMatch;
+    });
+
+    activitiesGrid.innerHTML = '';
+    const activitiesToDisplay = filteredActivities.slice(0, displayedActivitiesCount);
+
+    if (activitiesToDisplay.length === 0) {
+        activitiesGrid.innerHTML = `<p class="text-center col-span-full">לא נמצאו פעילויות התואמות את הסינון.</p>`;
+    } else {
+        activitiesToDisplay.forEach(activity => {
+            activitiesGrid.innerHTML += createActivityCard(activity);
+        });
+    }
+
+    if (filteredActivities.length > displayedActivitiesCount) {
+        loadMoreContainer.classList.remove('hidden');
+    } else {
+        loadMoreContainer.classList.add('hidden');
+    }
+}
+
 
 function renderBookingInfo() {
     if (!currentData || !currentData.flightData) return;
@@ -196,20 +300,6 @@ async function fetchAndRenderWeather() {
     }
 }
 
-function getWeatherInfo(code) {
-    const codes = {
-        0: { description: "בהיר", icon: "☀️" }, 1: { description: "בהיר", icon: "☀️" },
-        2: { description: "מעונן חלקית", icon: "🌤️" }, 3: { description: "מעונן", icon: "☁️" },
-        45: { description: "ערפילי", icon: "🌫️" }, 48: { description: "ערפילי", icon: "🌫️" },
-        51: { description: "טפטוף קל", icon: "🌦️" }, 53: { description: "טפטוף", icon: "🌦️" },
-        55: { description: "טפטוף", icon: "🌦️" }, 61: { description: "גשם קל", icon: "🌧️" },
-        63: { description: "גשם", icon: "🌧️" }, 65: { description: "גשם חזק", icon: "🌧️" },
-        80: { description: "ממטרים", icon: "🌦️" }, 81: { description: "ממטרים", icon: "🌦️" },
-        82: { description: "ממטרים", icon: "🌦️" }, 95: { description: "סופת רעמים", icon: "⛈️" },
-    };
-    return codes[code] || { description: "לא ידוע", icon: "🤷" };
-}
-
 function createActivityCard(activity) {
     const whatToBringList = activity.whatToBring ? `
        <div class="border-t pt-4 mt-4">
@@ -248,34 +338,20 @@ function createActivityCard(activity) {
        </div>`;
 }
 
-function renderActivities() {
-    if (!currentData || !currentData.activitiesData) return;
-    const activitiesGrid = document.getElementById('activities-grid');
-    if (!activitiesGrid) return;
-
-    const filteredActivities = currentData.activitiesData.filter(activity => {
-        if (activity.category === 'בית מרקחת') return false;
-        const categoryMatch = currentCategoryFilter === 'all' || activity.category === currentCategoryFilter;
-        let timeMatch = false;
-        if (currentTimeFilter === 'all') { timeMatch = true; }
-        else {
-            const time = parseInt(currentTimeFilter);
-            if (time === 20) timeMatch = activity.time <= 20;
-            else if (time === 40) timeMatch = activity.time > 20 && activity.time <= 40;
-            else if (time === 60) timeMatch = activity.time > 40;
-        }
-        return categoryMatch && timeMatch;
-    });
-
-    activitiesGrid.innerHTML = '';
-    if (filteredActivities.length === 0) {
-        activitiesGrid.innerHTML = `<p class="text-center col-span-full">לא נמצאו פעילויות התואמות את הסינון.</p>`;
-    } else {
-        filteredActivities.forEach(activity => {
-            activitiesGrid.innerHTML += createActivityCard(activity);
-        });
-    }
+function getWeatherInfo(code) {
+    const codes = {
+        0: { description: "בהיר", icon: "☀️" }, 1: { description: "בהיר", icon: "☀️" },
+        2: { description: "מעונן חלקית", icon: "🌤️" }, 3: { description: "מעונן", icon: "☁️" },
+        45: { description: "ערפילי", icon: "🌫️" }, 48: { description: "ערפילי", icon: "🌫️" },
+        51: { description: "טפטוף קל", icon: "🌦️" }, 53: { description: "טפטוף", icon: "🌦️" },
+        55: { description: "טפטוף", icon: "🌦️" }, 61: { description: "גשם קל", icon: "🌧️" },
+        63: { description: "גשם", icon: "🌧️" }, 65: { description: "גשם חזק", icon: "🌧️" },
+        80: { description: "ממטרים", icon: "🌦️" }, 81: { description: "ממטרים", icon: "🌦️" },
+        82: { description: "ממטרים", icon: "🌦️" }, 95: { description: "סופת רעמים", icon: "⛈️" },
+    };
+    return codes[code] || { description: "לא ידוע", icon: "🤷" };
 }
+
 
 function initMap() {
     if (map || !document.getElementById('map') || !L || !currentData.activitiesData) return;
@@ -389,12 +465,80 @@ function setupEventListeners() {
     // This function will re-attach listeners. Using a flag to prevent multiple attachments.
     if (document.body.dataset.listenersAttached) return;
 
+    // Mobile Menu
+    document.getElementById('menu-btn')?.addEventListener('click', () => {
+        document.getElementById('mobile-menu')?.classList.toggle('hidden');
+    });
+    document.querySelectorAll('#mobile-menu a, #mobile-menu button').forEach(link => {
+        link.addEventListener('click', () => document.getElementById('mobile-menu')?.classList.add('hidden'));
+    });
+
+    // --- Delegated event listeners for the entire body ---
+    document.body.addEventListener('click', (e) => {
+        // Modal Openers
+        if (e.target.closest('#open-packing-modal-btn, #open-packing-modal-btn-mobile')) {
+            openModal('packing-guide-modal', setupPackingGuideModal);
+        }
+        if (e.target.closest('#open-integrations-modal-btn, #open-integrations-modal-btn-mobile')) {
+            openModal('integrations-modal');
+        }
+        if (e.target.closest('.nav-gemini-btn')) {
+            openModal('gemini-chat-modal');
+        }
+         if (e.target.closest('#open-flights-modal-btn')) {
+            openModal('flights-details-modal', populateFlightDetails);
+        }
+         if (e.target.closest('#open-hotel-modal-btn')) {
+            openModal('hotel-booking-modal', populateHotelDetails);
+        }
+        if (e.target.closest('.nav-family-btn')) {
+            openModal('family-details-modal', populateFamilyDetails);
+        }
+         if (e.target.closest('.nav-nearby-btn')) {
+            openModal('nearby-modal', findAndDisplayNearby);
+        }
+        
+        // Specific Button Clicks
+        if (e.target.id === 'load-more-btn') handleLoadMore();
+        if (e.target.id === 'image-upload-btn') document.getElementById('image-upload-input').click();
+        if (e.target.id === 'bulletin-post-btn') handlePostBulletinMessage();
+        if (e.target.id === 'add-expense-btn') handleAddExpense();
+        if (e.target.id === 'add-item-btn') handleAddPackingItem();
+        if (e.target.id === 'update-list-by-theme-btn') handleUpdateListByTheme();
+        if (e.target.id === 'get-packing-suggestion-btn') handlePackingSuggestion();
+        if (e.target.id === 'download-suggestion-btn') handleDownloadSuggestion();
+        if (e.target.id === 'share-whatsapp-btn') handleShareWhatsApp();
+        if (e.target.id === 'add-to-calendar-btn') handleAddToCalendar();
+
+        // Carousel Navigation
+        if (e.target.closest('#carousel-next')) handleCarousel('next');
+        if (e.target.closest('#carousel-prev')) handleCarousel('prev');
+
+        // Itinerary Actions
+        if (e.target.closest('.swap-activity-btn')) handleSwapActivity(e.target.closest('.swap-activity-btn'));
+        
+        // Boarding Pass
+        if (e.target.id === 'show-boarding-passes-btn') showBoardingPasses();
+
+
+        // Modal Closers
+        if (e.target.closest('.modal-close-btn')) {
+            e.target.closest('.modal').classList.add('hidden');
+            e.target.closest('.modal').classList.remove('flex');
+        }
+    });
+
+    // --- Direct Listeners for specific elements ---
+    document.getElementById('image-upload-input')?.addEventListener('change', handleImageUpload);
+    document.getElementById('currency-chf')?.addEventListener('input', handleCurrencyConversion);
+    
     // Filter Buttons
     document.querySelectorAll('.btn-filter[data-filter]').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.btn-filter[data-filter]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             currentCategoryFilter = button.dataset.filter;
+            displayedActivitiesCount = 6; // Reset count on filter change
             renderActivities();
         });
     });
@@ -404,93 +548,23 @@ function setupEventListeners() {
             document.querySelectorAll('.btn-filter[data-time-filter]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             currentTimeFilter = button.dataset.timeFilter;
+            displayedActivitiesCount = 6; // Reset count on filter change
             renderActivities();
         });
     });
-    document.querySelector('.btn-filter[data-time-filter="all"]').classList.add('active');
 
-    // Mobile Menu
-    const menuBtn = document.getElementById('menu-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
-    menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
-    mobileMenu.querySelectorAll('a, button').forEach(link => {
-        link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
-    });
-
-    // All Modals
-    const modals = {
-        'packing-guide': { open: ['#open-packing-modal-btn', '#open-packing-modal-btn-mobile'], close: ['close-packing-modal-btn'], onOpen: setupPackingGuideModal },
-        'nearby': { open: ['.nav-nearby-btn'], close: ['close-nearby-modal-btn'], onOpen: findAndDisplayNearby },
-        'hotel-booking': { open: ['#open-hotel-modal-btn'], close: ['close-hotel-modal-btn'], onOpen: populateHotelDetails },
-        'flights-details': { open: ['#open-flights-modal-btn'], close: ['close-flights-modal-btn'], onOpen: populateFlightDetails },
-        'family-details': { open: ['.nav-family-btn'], close: ['close-family-modal-btn'], onOpen: populateFamilyDetails },
-        'gemini-chat': { open: ['.nav-gemini-btn'], close: ['close-gemini-modal-btn'] },
-        'story': { close: ['close-story-modal-btn'] },
-        'text-response': { close: ['close-text-response-modal-btn'] },
-        'boarding-pass': { close: ['close-boarding-pass-modal-btn'] }
-    };
-
-    for (const modalId in modals) {
-        const modalElement = document.getElementById(`${modalId}-modal`);
-        if (!modalElement) continue;
-        const config = modals[modalId];
-        if (config.open) {
-            config.open.forEach(selector => {
-                document.querySelectorAll(selector).forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        modalElement.classList.remove('hidden');
-                        modalElement.classList.add('flex');
-                        if (config.onOpen) config.onOpen();
-                    });
-                });
-            });
-        }
-        if (config.close) {
-            config.close.forEach(selector => {
-                const closeBtn = document.getElementById(selector);
-                if(closeBtn) {
-                    closeBtn.addEventListener('click', () => {
-                        modalElement.classList.add('hidden');
-                        modalElement.classList.remove('flex');
-                    });
-                }
-            });
-        }
-    }
-    
-    // Specific buttons that might be inside modals
-    document.body.addEventListener('click', function(event) {
-        if (event.target.id === 'show-boarding-passes-btn') {
-            showBoardingPasses();
-        }
-        // Add other delegated event listeners here if needed
-    });
-    
-    document.getElementById('what-to-wear-btn')?.addEventListener('click', handleWhatToWearRequest);
-    document.getElementById('generate-custom-plan-btn')?.addEventListener('click', handleCustomPlanRequest);
-    
-    // Event delegation for dynamically created buttons
-    document.body.addEventListener('click', function(event) {
-        if (event.target.classList.contains('gemini-plan-btn')) {
-            handlePlanRequest(event);
-        }
-        if (event.target.classList.contains('gemini-story-btn')) {
-            handleStoryRequest(event);
-        }
-        if (event.target.classList.contains('gemini-summary-btn')) {
-            handleSummaryRequest(event);
-        }
-    });
-
-    // Chat
-    const chatInput = document.getElementById('chat-input');
-    document.getElementById('chat-send-btn')?.addEventListener('click', handleChatSend);
-    chatInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleChatSend(); });
-    document.getElementById('chat-attach-btn')?.addEventListener('click', () => document.getElementById('chat-image-input').click());
-    document.getElementById('chat-image-input')?.addEventListener('change', handleChatImageUpload);
-    document.getElementById('chat-remove-image-btn')?.addEventListener('click', removeChatImage);
 
     document.body.dataset.listenersAttached = 'true';
+}
+
+
+function openModal(modalId, onOpenCallback) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (onOpenCallback) onOpenCallback();
+    }
 }
 
 function setupPackingGuideModal() {
@@ -498,17 +572,19 @@ function setupPackingGuideModal() {
 
     renderChecklist();
     renderLuggage();
+    
+    const categorySelect = document.getElementById('new-item-category-select');
+    categorySelect.innerHTML = Object.keys(currentData.packingListData).map(cat => `<option value="${cat}">${cat}</option>`).join('');
 
     const modal = document.getElementById('packing-guide-modal');
-    const accordionButtons = modal.querySelectorAll('.accordion-button');
-    accordionButtons.forEach(button => {
+    modal.querySelectorAll('.accordion-button').forEach(button => {
         if (!button.dataset.listenerAttached) {
             button.addEventListener('click', () => {
                 const content = button.nextElementSibling;
                 button.classList.toggle('open');
-                content.style.maxHeight = content.style.maxHeight ? null : content.scrollHeight + "px";
+                content.style.maxHeight = content.style.maxHeight ? null : `${content.scrollHeight}px`;
             });
-            button.dataset.listenerAttached = true;
+            button.dataset.listenerAttached = 'true';
         }
     });
     
@@ -526,9 +602,12 @@ function renderChecklist() {
                 <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
                 <div class="space-y-2">
                     ${currentData.packingListData[category].map(item => `
-                        <label class="flex items-center">
-                            <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-item="${item.name}">
-                            <span class="mr-3 text-gray-700">${item.name}</span>
+                        <label class="flex items-center justify-between">
+                            <span>
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-name="${item.name}">
+                                <span class="mr-3 text-gray-700">${item.name}</span>
+                            </span>
+                            <button class="remove-item-btn text-red-400 hover:text-red-600" data-category="${category}" data-name="${item.name}"><i class="fas fa-trash-alt"></i></button>
                         </label>
                     `).join('')}
                 </div>
@@ -536,25 +615,111 @@ function renderChecklist() {
         }
     }
     container.innerHTML = html;
+
+    // Add event listeners after rendering
     container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', handleChecklistItemToggle);
+    });
+    container.querySelectorAll('.remove-item-btn').forEach(button => {
+        button.addEventListener('click', handleRemovePackingItem);
     });
 }
 
 async function handleChecklistItemToggle(event) {
-    const { category, item } = event.target.dataset;
+    const { category, name } = event.target.dataset;
     const isChecked = event.target.checked;
     
     const categoryItems = currentData.packingListData[category];
     if (categoryItems) {
-        const itemToUpdate = categoryItems.find(i => i.name === item);
+        const itemToUpdate = categoryItems.find(i => i.name === name);
         if (itemToUpdate) {
             itemToUpdate.checked = isChecked;
             const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-            await updateDoc(docRef, { packingListData: currentData.packingListData });
+            // Use dot notation for nested field update
+            await updateDoc(docRef, { [`packingListData.${category}`]: categoryItems });
         }
     }
 }
+
+async function handleAddPackingItem() {
+    const input = document.getElementById('new-item-input');
+    const categorySelect = document.getElementById('new-item-category-select');
+    const newItemName = input.value.trim();
+    const category = categorySelect.value;
+
+    if (!newItemName || !category) return;
+
+    const newItem = { name: newItemName, checked: false };
+    
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    await updateDoc(docRef, {
+        [`packingListData.${category}`]: arrayUnion(newItem)
+    });
+
+    input.value = '';
+}
+
+async function handleRemovePackingItem(event) {
+    const { category, name } = event.currentTarget.dataset;
+    
+    // Create representations of the item in both checked and unchecked states
+    const itemToRemoveUnchecked = { name: name, checked: false };
+    const itemToRemoveChecked = { name: name, checked: true };
+
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    
+    // Firestore's arrayRemove needs the exact object. Since we don't know its checked state,
+    // we perform two separate updates. One will succeed, the other will do nothing.
+    await updateDoc(docRef, { [`packingListData.${category}`]: arrayRemove(itemToRemoveUnchecked) });
+    await updateDoc(docRef, { [`packingListData.${category}`]: arrayRemove(itemToRemoveChecked) });
+}
+
+
+async function handleUpdateListByTheme() {
+    const input = document.getElementById('theme-input');
+    const theme = input.value.trim();
+    if (!theme) return;
+    
+    showTextResponseModal("עדכון רשימה חכם", '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>');
+    
+    const existingList = JSON.stringify(currentData.packingListData);
+    const prompt = `Based on the following existing packing list (JSON format), please suggest a list of additional items to pack for a family with toddlers for a trip to Geneva, focusing on the theme: "${theme}". Please provide ONLY a JSON object as a response, where keys are categories and values are arrays of item names (strings). Do not include items that are already on the list.
+    
+    Existing List:
+    ${existingList}
+
+    Format your response strictly as a JSON object, like this: {"Category Name": ["item1", "item2"]}.`;
+
+    try {
+        const responseText = await callGeminiWithParts([{ text: prompt }]);
+        const newItems = JSON.parse(responseText);
+
+        let updatedPackingList = { ...currentData.packingListData };
+
+        for (const category in newItems) {
+            if (!updatedPackingList[category]) {
+                updatedPackingList[category] = [];
+            }
+            newItems[category].forEach(itemName => {
+                // Avoid adding duplicates
+                if (!updatedPackingList[category].some(item => item.name === itemName)) {
+                    updatedPackingList[category].push({ name: itemName, checked: false });
+                }
+            });
+        }
+        
+        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+        await updateDoc(docRef, { packingListData: updatedPackingList });
+
+        showTextResponseModal("הרשימה עודכנה!", "רשימת האריזה שלך עודכנה עם הצעות מותאמות אישית.");
+        input.value = '';
+
+    } catch (error) {
+        console.error("Error updating list with Gemini:", error);
+        showTextResponseModal("שגיאה", "לא הצלחנו לעדכן את הרשימה. אנא נסה שוב.");
+    }
+}
+
 
 function updatePackingProgress() {
     if (!currentData.packingListData) return;
@@ -572,6 +737,123 @@ function updatePackingProgress() {
     progressBar.style.width = percentage + '%';
 }
 
+function handleLoadMore() {
+    displayedActivitiesCount += ACTIVITIES_INCREMENT;
+    renderActivities();
+}
+
+function handleCarousel(direction) {
+    const carouselInner = document.getElementById('carousel-inner');
+    const totalImages = currentData.photoAlbum.length;
+    if (totalImages === 0) return;
+    
+    const currentTransform = new DOMMatrix(getComputedStyle(carouselInner).transform);
+    const currentOffset = currentTransform.m41;
+    const imageWidth = carouselInner.clientWidth;
+
+    let newIndex;
+    const currentIndex = Math.round(Math.abs(currentOffset) / imageWidth);
+
+    if (direction === 'next') {
+        newIndex = (currentIndex + 1) % totalImages;
+    } else {
+        newIndex = (currentIndex - 1 + totalImages) % totalImages;
+    }
+    
+    carouselInner.style.transform = `translateX(-${newIndex * 100}%)`;
+}
+
+
+async function handleImageUpload(event) {
+    const files = event.target.files;
+    if (!files.length) return;
+
+    alert(`מעלה ${files.length} תמונות...`);
+
+    for (const file of files) {
+        const timestamp = Date.now();
+        const storageRef = ref(storage, `trip-photos/${timestamp}-${file.name}`);
+        
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+
+        const newPhoto = {
+            url: downloadURL,
+            uploadedAt: timestamp
+        };
+        
+        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+        await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
+    }
+    alert("התמונות הועלו בהצלחה!");
+}
+
+async function handlePostBulletinMessage() {
+    const input = document.getElementById('bulletin-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const newMessage = {
+        text: text,
+        timestamp: Date.now() // Use client-side timestamp for immediate sorting
+    };
+
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    await updateDoc(docRef, { bulletinBoard: arrayUnion(newMessage) });
+    
+    input.value = '';
+}
+
+async function handleAddExpense() {
+    const descInput = document.getElementById('expense-desc');
+    const amountInput = document.getElementById('expense-amount');
+    const categorySelect = document.getElementById('expense-category');
+    
+    const desc = descInput.value.trim();
+    const amount = amountInput.value.trim();
+    const category = categorySelect.value;
+    
+    if (!desc || !amount) return;
+
+    const newExpense = {
+        desc,
+        amount: parseFloat(amount),
+        category,
+        timestamp: Date.now()
+    };
+    
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    await updateDoc(docRef, { expenses: arrayUnion(newExpense) });
+    
+    descInput.value = '';
+    amountInput.value = '';
+}
+
+function handleCurrencyConversion(event) {
+    const chfValue = event.target.value;
+    const ilsInput = document.getElementById('currency-ils');
+    const ILS_RATE = 4.1; // Approximate rate
+    ilsInput.value = (chfValue * ILS_RATE).toFixed(2);
+}
+
+function handleShareWhatsApp() {
+    const text = encodeURIComponent(`היי! בואו תראו את תכנון הטיול שלנו לז'נבה: ${window.location.href}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+}
+
+function handleAddToCalendar() {
+    const title = encodeURIComponent("טיול משפחתי לז'נבה");
+    const startDate = "20250824";
+    const endDate = "20250830"; // Note: End date for Google Calendar is exclusive
+    const details = encodeURIComponent(`קישור למדריך הטיול האינטראקטיבי: ${window.location.href}`);
+    const location = encodeURIComponent("Geneva, Switzerland");
+    
+    const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
+    
+    window.open(googleCalendarUrl, '_blank');
+}
+
+
 function renderLuggage() {
     const container = document.getElementById('luggage-list-container');
     if (!container || !currentData.luggageData) return;
@@ -584,6 +866,7 @@ function renderLuggage() {
         </div>
     `).join('');
 }
+
 
 // --- MODAL POPULATION FUNCTIONS ---
 
@@ -734,9 +1017,7 @@ function showBoardingPasses() {
                </div>`;
         });
     });
-    const modal = document.getElementById('boarding-pass-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    openModal('boarding-pass-modal');
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -791,7 +1072,7 @@ function setupPackingAssistant() { /* ... Logic for packing assistant ... */ }
 async function handlePackingSuggestion() { /* ... Logic to handle suggestion request ... */ }
 
 async function handlePlanRequest(event) {
-    const button = event.target;
+    const button = event.target.closest('button');
     const planContainer = button.closest('[data-day-index]');
     const resultContainer = planContainer.querySelector('.gemini-plan-result');
     const mainActivityName = planContainer.querySelector('h3').textContent.split(': ')[1];
@@ -810,8 +1091,7 @@ async function handleStoryRequest(event) {
     const storyContent = document.getElementById('story-modal-content');
 
     storyContent.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
-    storyModal.classList.remove('hidden');
-    storyModal.classList.add('flex');
+    openModal('story-modal');
 
     const prompt = `You are a children's storyteller. Write a short, simple, and happy bedtime story in Hebrew for two toddlers, Bar (a girl) and Ran (a boy), ages 2 and 3. The story should be about their adventure today in Geneva, where they visited ${mainActivityName}. Make it magical and fun.`;
     const geminiResponse = await callGeminiWithParts([{ text: prompt }]);
@@ -822,8 +1102,7 @@ function showTextResponseModal(title, content) {
     const modal = document.getElementById('text-response-modal');
     document.getElementById('text-response-modal-title').textContent = title;
     document.getElementById('text-response-modal-content').innerHTML = content.replace(/\n/g, '<br>');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    openModal('text-response-modal');
 }
 
 async function handleWhatToWearRequest() {
@@ -857,6 +1136,9 @@ async function handleCustomPlanRequest() { /* ... */ }
 async function handleChatSend() { /* ... */ }
 function handleChatImageUpload(event) { /* ... */ }
 function removeChatImage() { /* ... */ }
+function handleDownloadSuggestion() { /* ... */ }
+function handleSwapActivity(button) { /* ... */ }
+
 
 // --- API CALL ---
 async function callGeminiWithParts(parts) {

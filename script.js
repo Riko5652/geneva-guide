@@ -1,171 +1,162 @@
 // =================================================================================
-// DATA
+// IMPORTS and FIREBASE SETUP
 // =================================================================================
+import { doc, getDoc, setDoc, updateDoc } from "[https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js](https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js)";
 
-// Data for all activities and points of interest
-const activitiesData = [
-    { id: 1, name: 'Just Bloom', category: 'משחקייה', time: 35, transport: 'רכבת + הליכה', address: 'Rue de la Cité 24, 1204 Genève', description: 'בית קפה-משחקייה מסוגנן ואיכותי בלב העיר.', image: 'https://lh3.googleusercontent.com/p/AF1QipMXnZC1n-voXjVFzSsI3FgGFAaurrGx_U0qD-Vm=w408-h544-k-no', link: 'https://justbloom.ch/', lat: 46.2048, lon: 6.1459, cost: 'בתשלום (לפי צריכה)', openingHours: { 'Monday-Saturday': '09:00-18:00', 'Sunday': '10:00-17:00' }, whatToBring: ['חיתולים ומגבונים', 'בגדים להחלפה', 'בקבוק מים'] },
-    { id: 2, name: 'Vitam Parc', category: 'משחקייה', time: 55, transport: 'רכבת + אוטובוס', address: '500 Rte des Envignes, 74160 Neydens, France', description: 'מתחם ענק בצרפת עם אזור פנטסטי לפעוטות.', image: 'https://lh3.googleusercontent.com/gps-cs-s/AC9h4nqJpKF7GxCaLnlYnWlBrI7rDgldY3g6-4OBKZY9Z8nTeMDZV4S10z0A_NrNDZxNGIrHk3H3u6Ps8IAVpEeXPdeuEIr_7BUicVnCZUsngmqrhFLz9HI_okiyJaLYFypOCgiv-lw=w408-h306-k-no', link: 'https://www.vitam.fr/', lat: 46.1257, lon: 6.1181, cost: 'בתשלום (יש לבדוק באתר)', openingHours: { 'Everyday': '10:00-20:00' }, whatToBring: ['תיק החתלה מלא', 'חטיפים ואוכל', 'בגדי ים (לאזור המים)', 'גרביים למשחקייה'] },
-    { id: 4, name: 'C5 Kids Party', category: 'משחקייה', time: 65, transport: 'רכבת + אוטובוס', address: '1 Rue de la Gabelle, 74100 Annemasse, France', description: 'פארק משחקים מודרני בצרפת עם אזור ייעודי לפעוטות.', image: 'https://lh3.googleusercontent.com/gps-cs-s/AC9h4noS5YpRDqNpFkhUsOLUKYy5cTv-iqGnL7GrWy_Rl155uTjkNrNp_RnhsMHV8i3yBEtrLCts8Nw6j5V1yEkxWi9YbsfplcyPYWgY_6OgrTQkFI2pH3WfURz6soSHJV8UTgAwY3KY=w203-h152-k-no', link: 'https://c5kidsparty.com/', lat: 46.1973, lon: 6.2368, cost: 'בתשלום (יש לבדוק באתר)', openingHours: { 'Wednesday-Sunday': '10:00-19:00' }, whatToBring: ['תיק החתלה מלא', 'חטיפים', 'גרביים'] },
-    { id: 5, name: 'Bubbles Kids Club', category: 'משחקייה', time: 45, transport: 'רכבת + אוטובוס', address: 'Rte de Frontenex 62, 1207 Genève', description: 'מועדון פרימיום איכותי עם משחק חופשי ואזור מאובזר.', image: 'https://bubblesclub.ch/wp-content/uploads/2023/02/Bubbles-kids-scaled.jpg', link: 'https://bubblesclub.ch/', lat: 46.203, lon: 6.159, cost: 'כ-20 CHF לשעתיים', openingHours: { 'Tuesday-Saturday': '09:00-18:00' }, whatToBring: ['חיתולים ומגבונים', 'בגדים להחלפה', 'בקבוק מים'] },
-    { id: 6, name: 'TOTEM Escalade', category: 'משחקייה', time: 15, transport: 'הליכה או אוטובוס', address: 'Rue des Lattes 30, 1217 Meyrin', description: 'אולם טיפוס ענק במיירין עם "אזור ילדים" מדהים.', image: 'https://lh3.googleusercontent.com/p/AF1QipPAyNsS1b9S8-9fhBGMa7eFnMVQOnktiirzokOj=w408-h305-k-no', link: 'https://totem.ch/my', lat: 46.2255, lon: 6.0712, cost: 'כ-10 CHF לילד', openingHours: { 'Monday-Friday': '12:00-22:00', 'Saturday-Sunday': '10:00-20:00' }, whatToBring: ['בגדים נוחים לטיפוס', 'בקבוק מים', 'נעלי ספורט'] },
-    { id: 7, name: 'Airloop', category: 'משחקייה', time: 50, transport: 'רכבת + חשמלית', address: 'Rte des Jeunes 10, 1227 Carouge', description: 'פארק טרמפולינות עם אזור ייעודי לפעוטות.', image: 'https://lh3.googleusercontent.com/gps-cs-s/AC9h4noj60sKpcHQbwJ9tTwVnjAbkRyN0GPav27xbET_wSLWzz7VdcpVyFuqo5n-eWCeRyqXmYNNo-yD9afsILY6_9bzIu7ioNuHAq8oWnfoBWyB01yMUVFoxiKfKyfBOzDblAdON_E=w426-h240-k-no', link: 'https://www.airloop.ch/en/homepage', lat: 46.177, lon: 6.123, cost: 'כ-10 CHF לפעוט', openingHours: { 'Wednesday-Sunday': '10:00-19:00' }, whatToBring: ['גרביים מיוחדות (ניתן לקנות במקום)', 'בגדים נוחים', 'הרבה מים'] },
-    { id: 9, name: 'מוזיאון הטבע', category: 'תרבות', time: 45, transport: 'רכבת + אוטובוס', address: 'Rte de Malagnou 1, 1208 Genève', description: 'דיורמות מרשימות של פוחלצים.', image: 'https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=Rq9p9JmZtBfCTSYUq8--eA&cb_client=search.gws-prod.gps&w=408&h=240&yaw=57.40184&pitch=0&thumbfov=100', link: 'https://www.museum-geneve.ch/', lat: 46.2006, lon: 6.1607, cost: 'חינם (תערוכות קבועות)', openingHours: { 'Tuesday-Sunday': '10:00-17:00' }, whatToBring: ['תיק החתלה', 'חטיפים שקטים', 'עגלה נוחה לניווט'] },
-    { id: 10, name: 'La Maison de la Créativité', category: 'תרבות', time: 55, transport: 'רכבת + חשמלית', address: 'Rte de Chêne 7, 1223 Cologny', description: 'וילה קסומה המוקדשת למשחק חופשי ויצירתיות.', image: 'https://lh3.googleusercontent.com/p/AF1QipPJpFGXygKM8Z2YGwbFe3OHb_pghexQ8VxZS6XA=w408-h306-k-no', link: 'https://maisondelacreativite.ch/', lat: 46.179, lon: 6.176, cost: 'בתשלום (יש לבדוק באתר)', openingHours: { 'Wednesday-Thursday': '09:30-11:30, 14:00-17:00', 'Sunday': '10:00-12:00, 14:00-17:00' }, whatToBring: ['בגדים שלא אכפת שיתלכלכו', 'מגבונים', 'סקרנות ודמיון'] },
-    { id: 11, name: 'MAMCO', category: 'תרבות', time: 35, transport: 'רכבת + הליכה', address: 'Rue des Bains 10, 1205 Genève', description: 'סיור מודרך מותאם לפעוטות במוזיאון לאמנות מודרנית.', image: 'https://lh3.googleusercontent.com/gps-cs-s/AC9h4nrinx_hH6m4bTvOHy2IU8E8V-p50vx4AJFLArKyCty2A1rS_qDzss6AtDFz5B5xrJutAHIVdgrMttDo5j39VZ4gPEH0fm3bbeEJB1F7cTzwRi8ef1_IbGXQYuPoL5BP6jTejfPD=w408-h543-k-no', link: 'https://www.mamco.ch/en/', lat: 46.199, lon: 6.138, cost: 'חינם (בתיאום מראש)', openingHours: { 'Tuesday-Sunday': '11:00-18:00' }, whatToBring: ['תיק החתלה', 'מנשא (יכול להיות נוח יותר מעגלה)'] },
-    { id: 12, name: 'תיאטרון הבובות', category: 'תרבות', time: 40, transport: 'רכבת + הליכה', address: 'Rue Rodo 3, 1205 Genève', description: 'הצגות קסומות לילדים. יש לבדוק התאמה לגילאי 2+.', image: 'https://www.marionnettes.ch/sites/default/files/styles/w1024/public/spectacles/2021-03/2019_TMG_LaPromesse_c_Eliphas_01.jpg?itok=zQ-a-6xJ', link: 'https://www.marionnettes.ch/', lat: 46.202, lon: 6.143, cost: 'בתשלום (יש לבדוק באתר)', openingHours: { 'Varies by show': 'Check website' }, whatToBring: ['חטיף שקט', 'שתיה', 'סבלנות'] },
-    { id: 13, name: 'Ludothèque de Meyrin', category: 'משחקייה', time: 15, transport: 'הליכה או אוטובוס', address: 'Av. de Vaudagne 18, 1217 Meyrin', description: 'ספריית צעצועים ציבורית. חוויה אותנטית ורגועה.', image: 'https://lh3.googleusercontent.com/p/AF1QipNQtGaxn5GS5hNT6lNRGoPGq96K3t3fwyNv3ESJ=w408-h306-k-no', link: 'https://www.meyrin.ch/ludotheques', lat: 46.229, lon: 6.079, cost: 'חינם למשחק במקום', openingHours: { 'Monday': '15:00-18:00', 'Wednesday': '10:00-12:00, 14:00-18:00', 'Friday': '15:00-18:00' }, whatToBring: ['חיתולים ומגבונים', 'שתיה'] },
-    { id: 14, name: 'Un R de Famille', category: 'קפה', time: 40, transport: 'רכבת + חשמלית', address: 'Rue Goetz-Monin 10, 1205 Genève', description: 'מסעדה למשפחות עם פינת משחקים חמודה.', image: 'https://lh3.googleusercontent.com/p/AF1QipOgmWF6KtT8O-hBPNj4_5YdFO6vLF1S4tvubpNh=w203-h135-k-no', link: 'https://unrdefamille.ch/', lat: 46.197, lon: 6.142, cost: 'עלות האוכל/שתיה', openingHours: { 'Tuesday-Saturday': '10:00-23:00' }, whatToBring: ['תיק החתלה', 'תיאבון'] },
-    { id: 15, name: 'Parc des Bastions', category: 'חוץ', time: 40, transport: 'רכבת + הליכה', address: 'Prom. des Bastions 1, 1204 Genève', description: 'פארק יפהפה במרכז העיר עם גן שעשועים.', image: 'https://lh3.googleusercontent.com/gps-cs-s/AC9h4nq5wqRSf-GHeg_0e53yzzd2jI6VkGdAltRVn8xjOWdAlq6WptaivMDGGZD_IzeGrNw2PVNPsyoUqo-88W_NlU5uFnOmJXzgrsI7VM0rnukorshUky-vdLb0RaO-1c5kgL-wdMYf=w408-h544-k-no', link: 'https://www.geneve.ch/fr/parc-bastions', lat: 46.200, lon: 6.146, cost: 'חינם', openingHours: { 'Everyday': '24/7' }, whatToBring: ['קרם הגנה וכובעים', 'שמיכת פיקניק', 'חטיפים ושתיה', 'כדור או צעצועים לחול'] },
-    { id: 16, name: 'Bois de la Bâtie', category: 'חוץ', time: 45, transport: 'רכבת + אוטובוס', address: 'Chem. de la Bâtie, 1202 Genève', description: 'פארק גדול עם גן חיות קטן וחמוד (כניסה חופשית).', image: 'https://lh3.googleusercontent.com/gps-cs-s/AC9h4no9mdhSxIANhw49JOEP16IFiu44z_lzEYD8B9sR-euhziGbVsobws0YRQbP6S3ilXWsA-x2L3LVxE2FCsuHw17_zDqrIedIs77PeIWZGI9ZGfQ2Mir7fOBEEW3ZXzF8avtp1VHx=w426-h240-k-no', link: 'https://www.geneve.ch/fr/parc-bastions', lat: 46.194, lon: 6.128, cost: 'חינם', openingHours: { 'Park': '24/7', 'Animal Park': '08:00-18:00' }, whatToBring: ['נעלי הליכה נוחות', 'מים וחטיפים', 'עגלה עמידה לשבילים'] },
-    { id: 17, name: 'Pharmacie Principale Gare Cornavin', category: 'בית מרקחת', time: 20, transport: 'רכבת', address: 'Pl. de Cornavin 7, 1201 Genève', description: 'בית מרקחת גדול ומרכזי בתחנת הרכבת הראשית.', image: 'https://upload.wikimedia.org/wikipedia/commons/7/77/Pharmacie_Principale_Gen%C3%A8ve_Cornavin.JPG', link: '#', lat: 46.210, lon: 6.142, cost: '-' },
-    { id: 18, name: 'Pharmacie de la Bergère (Meyrin)', category: 'בית מרקחת', time: 10, transport: 'הליכה', address: 'Rue de la Bergère 12, 1217 Meyrin', description: 'בית מרקחת שכונתי קרוב למלון.', image: 'https://placehold.co/600x400/F3EFEA/4A4A4A?text=בית+מרקחת', link: '#', lat: 46.219, lon: 6.075, cost: '-' },
-    { id: 19, name: 'Aquatis Aquarium-Vivarium', category: 'תרבות', time: 60, transport: 'רכבת', address: 'Route de Berne 144, 1010 Lausanne', description: 'האקווריום הגדול באירופה למים מתוקים, חוויה מרתקת.', image: 'https://www.aquatis.ch/wp-content/uploads/2019/07/AQUATIS_parcours_01-scaled.jpg', link: 'https://www.aquatis.ch/', lat: 46.5335, lon: 6.6503, cost: 'בתשלום (יש לבדוק באתר)', openingHours: { 'Everyday': '10:00-18:00' }, whatToBring: ['עגלה נוחה', 'תיק החתלה', 'חטיפים ושתיה'] }
-];
+// This should be populated by Netlify's environment variables
+// Using a fallback for local development
+const firebaseConfigString = import.meta.env.VITE_FIREBASE_CONFIG || '{}';
+let firebaseConfig = {};
+let app, db, tripDocRef;
 
-// Detailed flight information
-const flightData = {
-    outbound: [
-        { from: 'תל אביב (TLV)', to: 'אתונה (ATH)', date: '2025-08-24', time: '14:00 - 16:15', airline: 'Israir', flightNum: '6H567', airlineRef: 'ASLZDC', status: 'On Time', checkin: 'https://myisrair.israir.co.il/Account' },
-        { from: 'אתונה (ATH)', to: 'ז\'נבה (GVA)', date: '2025-08-24', time: '20:45 - 22:45', airline: 'easyJet', flightNum: 'EZS1472', airlineRef: 'KB1ZR6T', status: 'On Time', checkin: 'https://www.easyjet.com/en/manage/viewbooking?bookingReference=KB1ZR6T&passengerLogin=true' }
-    ],
-    inbound: [
-        { from: 'ז\'נבה (GVA)', to: 'אתונה (ATH)', date: '2025-08-29', time: '06:20 - 10:05', airline: 'easyJet', flightNum: 'EZS1471', airlineRef: 'KB1ZR6H', status: 'On Time', checkin: 'https://www.easyjet.com/en/manage/viewbooking?bookingReference=KB1ZR6H&passengerLogin=true' },
-        { from: 'אתונה (ATH)', to: 'תל אביב (TLV)', date: '2025-08-29', time: '12:00 - 14:00', airline: 'Blue Bird Airways', flightNum: 'BZ701', airlineRef: '3053CA47', status: 'Delayed', checkin: 'https://booking.bluebirdair.com/booking/3CA477C5-9410-47E3-869D-385AD2531207' }
-    ],
-    connections: {
-        outbound: '4 שעות ו-30 דקות (העברה עצמית)',
-        inbound: 'שעה ו-55 דקות (העברה עצמית - <strong>קצר מאוד!</strong>)'
-    },
-    passengers: [
-        { name: 'Adi Pnina Lipetz', ticket: '818-2747537094', seatOutbound1: '26A', seatOutbound2: '28D', seatInbound1: '17B', seatInbound2: '29B', baggage: '1x8kg Carry-on' },
-        { name: 'Bar Lipetz', ticket: '818-2747537097', seatOutbound1: '26C', seatOutbound2: '28E', seatInbound1: '17C', seatInbound2: '29D', baggage: 'Small Carry-on' },
-        { name: 'Dor Lipetz', ticket: '818-2747537096', seatOutbound1: '26B', seatOutbound2: '28C', seatInbound1: '17A', seatInbound2: '29A', baggage: '1x20kg Checked + Large Carry-on' },
-        { name: 'Ran Lipetz', ticket: '818-2747537095', seatOutbound1: '26D', seatOutbound2: '28F', seatInbound1: '17D', seatInbound2: '29C', baggage: 'Small Carry-on' }
-    ]
-};
-
-// Family passport details
-const familyData = [
-    { name: 'דור ליפץ', passport: '23136738' },
-    { name: 'עדי ליפץ', passport: '34574916' },
-    { name: 'בר ליפץ', passport: '36940752' },
-    { name: 'רן ליפץ', passport: '40751154' }
-];
-
-// Packing list data
-const packingListData = {
-    "מסמכים וכסף": ["דרכונים", "צילומי דרכונים", "כרטיסי טיסה", "אישורי מלון", "רישיון נהיגה", "ביטוח נסיעות", "כסף מקומי (פרנק שוויצרי)", "כרטיסי אשראי"],
-    "ביגוד (מבוגרים)": ["מעיל גשם/רוח", "פליז/סווטשירט (3)", "חולצות קצרות (5)", "חולצות ארוכות (2)", "מכנסיים ארוכים (2)", "בגדי ערב (1)", "הלבשה תחתונה וגרביים (6 סטים)"],
-    "ביגוד (ילדים)": ["מעיל", "פליז/סווטשירט (3)", "חולצות קצרות (6)", "חולצות ארוכות (3)", "מכנסיים ארוכים (4)", "פיג'מות (2)", "גרביים ותחתונים (8 סטים)"],
-    "היגיינה ותרופות": ["תיק עזרה ראשונה", "תרופות אישיות", "משחת שיניים ומברשות", "שמפו וסבון", "קרם הגנה", "אלכוג'ל", "חיתולים", "מגבונים"],
-    "ציוד לילדים": ["עגלה", "מנשא", "צעצועים וספרים לטיסה", "חטיפים ובקבוקי מים", "מוצצים", "תמ\"ל (במידת הצורך)"],
-    "אלקטרוניקה": ["טלפונים ומטענים", "מטען נייד", "מתאם שקעים אירופאי", "אוזניות"]
-};
-
-// Luggage data
-const luggageData = [
-    { name: "מזוודה גדולה", owner: "משותף", weight: "עד 23 ק\"ג", notes: "לשלוח לבטן המטוס. מכילה את רוב הבגדים והציוד." },
-    { name: "טרולי עלייה למטוס", owner: "דור", weight: "עד 8 ק\"ג", notes: "מכיל בגדים להחלפה, מסמכים חשובים וציוד חיוני." },
-    { name: "תיק גב", owner: "עדי", weight: "-", notes: "תיק החתלה עם כל מה שצריך לילדים בזמינות מיידית." },
-    { name: "עגלה", owner: "ילדים", weight: "-", notes: "נשלחת בשער העלייה למטוס." }
-];
-
-// **NEW** - Time sensitive actions data
-const timeSensitiveActions = [
-    { start: -30, end: -8, title: "⏳ חודש לטיסה: משימות חשובות", content: "<ul class='list-disc pr-5 text-left'><li>ודאו שכל הדרכונים בתוקף לפחות ל-6 חודשים מיום החזרה.</li><li>צלמו את כל המסמכים החשובים ושמרו עותק בענן (Google Drive, Dropbox).</li><li>רכשו פרנקים שוויצריים ואירו (לצרפת).</li><li>בדקו את מלאי התרופות וציוד העזרה הראשונה.</li></ul>" },
-    { start: -7, end: -3, title: "⏰ שבוע לטיסה: מתחילים לארוז!", content: "<ul class='list-disc pr-5 text-left'><li>התחילו לרכז את כל הפריטים מרשימת האריזה.</li><li>כבסו את כל הבגדים שאתם מתכננים לקחת.</li><li>רכשו חטיפים וצעצועים קטנים להעסיק את הילדים בטיסה.</li></ul>" },
-    { start: -2, end: -1, title: "✈️ יומיים לטיסה: צ'ק-אין ואריזות אחרונות", content: "<ul class='list-disc pr-5 text-left'><li>בצעו צ'ק-אין אונליין לטיסות. האפשרות נפתחת בדרך כלל 24-48 שעות לפני הטיסה.</li><li>ארזו את המזוודות ושקלו אותן כדי לוודא שאתם עומדים במגבלות.</li><li>הטעינו את כל המכשירים האלקטרוניים והמטענים הניידים.</li></ul>" },
-    { start: 0, end: 0, title: "☀️ יום הטיסה: יצאנו לדרך!", content: "<ul class='list-disc pr-5 text-left'><li>זכרו לקחת את תיק המסמכים והדרכונים!</li><li>בדקו שוב ששום דבר חיוני לא נשכח בבית.</li><li>הגיעו לשדה התעופה לפחות 3 שעות לפני ההמראה. נסיעה טובה!</li></ul>" }
-];
+try {
+    firebaseConfig = JSON.parse(firebaseConfigString);
+    // Initialize Firebase
+    app = window.firebase.initializeApp(firebaseConfig);
+    db = window.firebase.getFirestore(app);
+    // Document reference (assuming one document holds all trip data)
+    tripDocRef = doc(db, "trips", "geneva2025"); 
+} catch(e) {
+    console.error("Firebase initialization failed. Make sure VITE_FIREBASE_CONFIG is set.", e);
+    document.body.innerHTML = '<div class="p-4 bg-red-100 text-red-800">Failed to initialize Firebase. Please check console.</div>';
+}
 
 
-// Global state variables
+// =================================================================================
+// GLOBAL STATE
+// =================================================================================
+let tripData = {}; // This will hold all data fetched from Firebase
 let currentWeatherData = null;
 let chatImageBase64 = null;
 let map = null;
 let visibleActivitiesCount = 6;
 const activitiesIncrement = 6;
+let currentCategoryFilter = 'all';
+let currentTimeFilter = 'all';
 
 // =================================================================================
 // INITIALIZATION
 // =================================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if(!db) return; // Stop if firebase failed
+    await loadTripData(); 
+    
+    // Once data is loaded, render the page
     fetchAndRenderWeather();
     renderActivities();
     initMap();
     setupEventListeners();
     displayDailyAttraction();
     populateItineraryDetails();
-    setupPackingGuideModal();
     updateProgressBar();
     displayCurrentActions();
-    setInterval(updateProgressBar, 60000); // Update every minute
+    renderEmbeddedPhotoAlbum();
+    
+    setInterval(updateProgressBar, 60000); 
 });
+
+// =================================================================================
+// DATA HANDLING (FIREBASE)
+// =================================================================================
+
+async function loadTripData() {
+    try {
+        const docSnap = await getDoc(tripDocRef);
+        if (docSnap.exists()) {
+            tripData = docSnap.data();
+            console.log("Trip data loaded successfully!");
+        } else {
+            console.error("No trip data found in Firestore! Please create the document using the initial-data.json file.");
+            document.body.innerHTML = '<div class="p-4 bg-red-100 text-red-800">Error: Trip data document not found in Firestore. Please follow the setup guide to create it.</div>';
+        }
+    } catch (error) {
+        console.error("Error loading trip data:", error);
+        document.body.innerHTML = '<div class="p-4 bg-red-100 text-red-800">Error loading data from Firebase. Check console for details.</div>';
+    }
+}
+
+async function saveTripData(newData) {
+    try {
+        await updateDoc(tripDocRef, newData);
+        console.log("Trip data updated successfully!", newData);
+    } catch (error) {
+        console.error("Error updating trip data:", error);
+    }
+}
 
 // =================================================================================
 // NEW & UPDATED CORE FEATURES
 // =================================================================================
 
-function handlePhotoAlbumLoad() {
-    const linkInput = document.getElementById('photos-link-input');
-    const photoGrid = document.getElementById('photos-grid');
-    const placeholder = document.getElementById('photos-grid-placeholder');
-    const url = linkInput.value.trim();
+async function handlePhotoAlbumLoad() {
+    const embedInput = document.getElementById('photos-embed-input');
+    const embedCode = embedInput.value.trim();
+    const srcRegex = /src="([^"]+)"/;
+    const match = embedCode.match(srcRegex);
 
-    if (!url || !url.startsWith('http')) {
-        alert('אנא הזינו קישור תקין.');
+    if (!match || !match[1] || !match[1].startsWith('[https://docs.google.com/presentation/](https://docs.google.com/presentation/)')) {
+        alert('אנא הזינו קוד הטמעה תקין מ-Google Slides.');
         return;
     }
 
-    placeholder.innerHTML = '<div class="flex justify-center"><div class="loader"></div></div>';
-    placeholder.classList.remove('hidden');
-    photoGrid.classList.add('hidden');
-    photoGrid.innerHTML = '';
+    const slideUrl = match[1];
 
-    // Simulate fetching photos as we cannot directly access Google Photos albums
-    setTimeout(() => {
-        placeholder.classList.add('hidden');
-        photoGrid.classList.remove('hidden');
-        photoGrid.classList.add('grid');
+    tripData.photoAlbumEmbed = slideUrl;
+    await saveTripData({ photoAlbumEmbed: slideUrl });
+
+    renderEmbeddedPhotoAlbum();
+    embedInput.value = '';
+}
+
+function renderEmbeddedPhotoAlbum() {
+    const photosContainer = document.getElementById('photos-container');
+    
+    if (tripData && tripData.photoAlbumEmbed) {
+        photosContainer.innerHTML = ''; // Clear placeholder
+
+        const iframeWrapper = document.createElement('div');
+        iframeWrapper.className = 'relative aspect-video bg-black rounded-lg shadow-lg overflow-hidden';
         
-        // Add a message about the simulation
-        const infoHeader = document.createElement('div');
-        infoHeader.className = 'col-span-full bg-blue-50 text-blue-800 p-3 rounded-lg text-sm text-center';
-        infoHeader.innerHTML = `זוהי תצוגה מקדימה בלבד. לצפייה באלבום המלא, <a href="${url}" target="_blank" class="font-bold underline">לחצו כאן</a>.`;
-        photoGrid.appendChild(infoHeader);
-
-        // Display placeholder images
-        for (let i = 0; i < 8; i++) {
-            const photoEl = document.createElement('div');
-            photoEl.className = 'aspect-square bg-gray-200 rounded-lg overflow-hidden';
-            photoEl.innerHTML = `<img src="https://placehold.co/400x400/E0D8CC/4A4A4A?text=Photo+${i+1}" class="w-full h-full object-cover animate-fade-in" alt="תמונה מהאלבום">`;
-            photoGrid.appendChild(photoEl);
-        }
-    }, 1500);
+        const iframe = document.createElement('iframe');
+        iframe.src = tripData.photoAlbumEmbed;
+        iframe.frameBorder = '0';
+        iframe.width = '100%';
+        iframe.height = '100%';
+        iframe.allowFullscreen = true;
+        
+        iframeWrapper.appendChild(iframe);
+        
+        const fullscreenButton = document.createElement('button');
+        fullscreenButton.id = 'open-photos-fullscreen-btn';
+        fullscreenButton.className = 'absolute bottom-4 left-4 bg-black/50 text-white py-2 px-4 rounded-lg hover:bg-black/75 transition';
+        fullscreenButton.textContent = 'הצג במסך מלא';
+        
+        photosContainer.appendChild(iframeWrapper);
+        photosContainer.appendChild(fullscreenButton);
+    }
 }
 
 
 function initMap() {
-    if (map) return; // Initialize map only once
+    if (map || !tripData.activities) return; 
 
     const hotelLocation = { lat: 46.2183, lon: 6.0744, name: "Mercure Hotel Meyrin" };
     map = L.map('map').setView([hotelLocation.lat, hotelLocation.lon], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: '&copy; <a href="[https://www.openstreetmap.org/copyright](https://www.openstreetmap.org/copyright)">OpenStreetMap</a> contributors'
     }).addTo(map);
 
     const hotelIcon = L.icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconUrl: '[https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png](https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png)',
+        shadowUrl: '[https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png](https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png)',
         iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
     });
 
     const activityIcon = L.icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconUrl: '[https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png](https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png)',
+        shadowUrl: '[https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png](https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png)',
         iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
     });
 
@@ -173,7 +164,7 @@ function initMap() {
         .addTo(map)
         .bindTooltip(`<b>${hotelLocation.name}</b><br>נקודת המוצא שלכם!`).openTooltip();
 
-    activitiesData.forEach(activity => {
+    tripData.activities.forEach(activity => {
         if (activity.lat && activity.lon) {
             L.marker([activity.lat, activity.lon], { icon: activityIcon })
                 .addTo(map)
@@ -199,8 +190,6 @@ function updateProgressBar() {
     ];
 
     const now = new Date();
-    // For demonstration, let's pretend today is a date during the trip timeline
-    // const now = new Date('2025-08-24T18:00:00'); 
     const start = new Date(tripTimeline[0].date);
     const end = new Date(tripTimeline[tripTimeline.length - 1].date);
 
@@ -237,13 +226,19 @@ function updateProgressBar() {
 }
 
 function displayCurrentActions() {
+    const timeSensitiveActions = [
+        { start: -30, end: -8, title: "⏳ חודש לטיסה: משימות חשובות", content: "<ul class='list-disc pr-5 text-left'><li>ודאו שכל הדרכונים בתוקף לפחות ל-6 חודשים מיום החזרה.</li><li>צלמו את כל המסמכים החשובים ושמרו עותק בענן (Google Drive, Dropbox).</li><li>רכשו פרנקים שוויצריים ואירו (לצרפת).</li><li>בדקו את מלאי התרופות וציוד העזרה הראשונה.</li></ul>" },
+        { start: -7, end: -3, title: "⏰ שבוע לטיסה: מתחילים לארוז!", content: "<ul class='list-disc pr-5 text-left'><li>התחילו לרכז את כל הפריטים מרשימת האריזה.</li><li>כבסו את כל הבגדים שאתם מתכננים לקחת.</li><li>רכשו חטיפים וצעצועים קטנים להעסיק את הילדים בטיסה.</li></ul>" },
+        { start: -2, end: -1, title: "✈️ יומיים לטיסה: צ'ק-אין ואריזות אחרונות", content: "<ul class='list-disc pr-5 text-left'><li>בצעו צ'ק-אין אונליין לטיסות. האפשרות נפתחת בדרך כלל 24-48 שעות לפני הטיסה.</li><li>ארזו את המזוודות ושקלו אותן כדי לוודא שאתם עומדים במגבלות.</li><li>הטעינו את כל המכשירים האלקטרוניים והמטענים הניידים.</li></ul>" },
+        { start: 0, end: 0, title: "☀️ יום הטיסה: יצאנו לדרך!", content: "<ul class='list-disc pr-5 text-left'><li>זכרו לקחת את תיק המסמכים והדרכונים!</li><li>בדקו שוב ששום דבר חיוני לא נשכח בבית.</li><li>הגיעו לשדה התעופה לפחות 3 שעות לפני ההמראה. נסיעה טובה!</li></ul>" }
+    ];
+    
     const now = new Date();
     const flightDate = new Date('2025-08-24T00:00:00');
     const daysUntilFlight = Math.ceil((flightDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
     const action = timeSensitiveActions.find(a => daysUntilFlight <= a.end && daysUntilFlight >= a.start);
-
     const container = document.getElementById('current-actions');
+
     if (action) {
         document.getElementById('current-actions-title').textContent = action.title;
         document.getElementById('current-actions-content').innerHTML = action.content;
@@ -256,7 +251,9 @@ function displayCurrentActions() {
 function showBoardingPasses() {
     const container = document.getElementById('boarding-pass-content');
     container.innerHTML = ''; 
+    if (!tripData.flightData) return;
 
+    const { flightData } = tripData;
     const flights = [...flightData.outbound, ...flightData.inbound];
     const seatMapping = {
         outbound1: 'seatOutbound1', outbound2: 'seatOutbound2',
@@ -275,7 +272,7 @@ function showBoardingPasses() {
                     <div class="bp-main">
                         <div class="bp-header">
                             <span class="bp-airline">${flight.airline}</span>
-                            <img src="https://placehold.co/40x40/FFFFFF/4A4A4A?text=${flight.airline.charAt(0)}" alt="Airline Logo" class="bp-logo">
+                            <img src="[https://placehold.co/40x40/FFFFFF/4A4A4A?text=$](https://placehold.co/40x40/FFFFFF/4A4A4A?text=$){flight.airline.charAt(0)}" alt="Airline Logo" class="bp-logo">
                         </div>
                         <div class="bp-flight-info">
                             <div>
@@ -295,7 +292,7 @@ function showBoardingPasses() {
                     </div>
                     <div class="bp-stub">
                         <div class="bp-qr-code">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(qrData)}" alt="QR Code">
+                            <img src="[https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=$](https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=$){encodeURIComponent(qrData)}" alt="QR Code">
                         </div>
                         <div class="bp-details">
                             <div><span class="bp-label">טיסה</span><span class="bp-value">${flight.flightNum}</span></div>
@@ -309,70 +306,48 @@ function showBoardingPasses() {
         });
     });
     
-    const modal = document.getElementById('boarding-pass-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    document.getElementById('boarding-pass-modal').classList.remove('hidden');
 }
 
 // =================================================================================
 // UI RENDERING & EVENT HANDLING
 // =================================================================================
 
-async function fetchAndRenderWeather() {
-    const forecastContainer = document.getElementById('weather-forecast');
-    const whatToWearBtn = document.getElementById('what-to-wear-btn');
-    const startDate = '2025-08-24';
-    const endDate = '2025-08-29';
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=46.20&longitude=6.14&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe/Berlin&start_date=${startDate}&end_date=${endDate}`;
+function renderActivities() {
+    if (!tripData.activities) return;
+    const activitiesGrid = document.getElementById('activities-grid');
+    const filteredActivities = tripData.activities.filter(activity => {
+        if (activity.category === 'בית מרקחת') return false;
+        const categoryMatch = currentCategoryFilter === 'all' || activity.category === currentCategoryFilter;
+        let timeMatch = false;
+        if (currentTimeFilter === 'all') { timeMatch = true; }
+        else {
+            const time = parseInt(currentTimeFilter);
+            if (time === 20) timeMatch = activity.time <= 20;
+            else if (time === 40) timeMatch = activity.time > 20 && activity.time <= 40;
+            else if (time === 60) timeMatch = activity.time > 40;
+        }
+        return categoryMatch && timeMatch;
+    });
 
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-        currentWeatherData = data; 
+    const activitiesToShow = filteredActivities.slice(0, visibleActivitiesCount);
+    activitiesGrid.innerHTML = '';
 
-        forecastContainer.innerHTML = '';
-
-        data.daily.time.forEach((dateStr, i) => {
-            const date = new Date(dateStr);
-            const day = date.toLocaleDateString('he-IL', { weekday: 'long' });
-            const dayMonth = `${date.getDate()}.${date.getMonth() + 1}`;
-            const tempMax = Math.round(data.daily.temperature_2m_max[i]);
-            const tempMin = Math.round(data.daily.temperature_2m_min[i]);
-            const weather = getWeatherInfo(data.daily.weathercode[i]);
-
-            forecastContainer.innerHTML += `
-                <div class="bg-secondary text-center p-4 rounded-lg shadow flex-shrink-0 w-full sm:w-auto flex-1">
-                    <div class="font-bold text-lg">${day}, ${dayMonth}</div>
-                    <div class="text-4xl my-2">${weather.icon}</div>
-                    <div class="font-semibold">${tempMin}°/${tempMax}°</div>
-                    <div class="text-sm text-gray-600">${weather.description}</div>
-                </div>
-            `;
+    if (activitiesToShow.length === 0) {
+        activitiesGrid.innerHTML = '<p class="text-center col-span-full">לא נמצאו פעילויות התואמות את הסינון.</p>';
+    } else {
+        activitiesToShow.forEach(activity => {
+            activitiesGrid.innerHTML += createActivityCard(activity);
         });
-        whatToWearBtn.classList.remove('hidden');
-    } catch (error) {
-        console.error("Failed to fetch weather:", error);
-        forecastContainer.innerHTML = '<p class="text-center w-full col-span-full">לא ניתן היה לטעון את תחזית מזג האוויר.</p>';
+    }
+
+    const loadMoreContainer = document.getElementById('load-more-container');
+    if (filteredActivities.length > visibleActivitiesCount) {
+        loadMoreContainer.classList.remove('hidden');
+    } else {
+        loadMoreContainer.classList.add('hidden');
     }
 }
-
-function getWeatherInfo(code) {
-    const codes = {
-        0: { description: "בהיר", icon: "☀️" }, 1: { description: "בהיר", icon: "☀️" },
-        2: { description: "מעונן חלקית", icon: "🌤️" }, 3: { description: "מעונן", icon: "☁️" },
-        45: { description: "ערפילי", icon: "🌫️" }, 48: { description: "ערפילי", icon: "🌫️" },
-        51: { description: "טפטוף קל", icon: "🌦️" }, 53: { description: "טפטוף", icon: "🌦️" },
-        55: { description: "טפטוף", icon: "🌦️" }, 61: { description: "גשם קל", icon: "🌧️" },
-        63: { description: "גשם", icon: "🌧️" }, 65: { description: "גשם חזק", icon: "🌧️" },
-        80: { description: "ממטרים", icon: "🌦️" }, 81: { description: "ממטרים", icon: "🌦️" },
-        82: { description: "ממטרים", icon: "🌦️" }, 95: { description: "סופת רעמים", icon: "⛈️" },
-    };
-    return codes[code] || { description: "לא ידוע", icon: "🤷" };
-}
-
-const activitiesGrid = document.getElementById('activities-grid');
-let currentCategoryFilter = 'all';
-let currentTimeFilter = 'all';
 
 const createActivityCard = (activity) => {
     const whatToBringList = activity.whatToBring ? `
@@ -389,7 +364,7 @@ const createActivityCard = (activity) => {
                 <img src="${activity.image}" alt="${activity.name}" class="w-full h-48 object-cover" onerror="this.closest('.card').classList.add('no-image');">
             </div>
             <div class="image-fallback">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             </div>
             <div class="p-6 flex flex-col flex-grow">
                 <div class="flex-grow">
@@ -419,192 +394,16 @@ const createActivityCard = (activity) => {
                 </div>
                 <div class="flex space-x-2 space-x-reverse mt-4">
                     <a href="${activity.link || '#'}" target="_blank" class="flex-1 text-center btn-primary px-4 py-2 rounded-lg text-sm">לאתר הרשמי</a>
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${activity.address}" target="_blank" class="flex-1 text-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm">ניווט ב-Maps</a>
+                    <a href="[https://www.google.com/maps/dir/?api=1&destination=$](https://www.google.com/maps/dir/?api=1&destination=$){activity.address}" target="_blank" class="flex-1 text-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm">ניווט ב-Maps</a>
                 </div>
             </div>
         </div>
     `;
 };
 
-const renderActivities = () => {
-    const filteredActivities = activitiesData.filter(activity => {
-        if (activity.category === 'בית מרקחת') return false;
-        const categoryMatch = currentCategoryFilter === 'all' || activity.category === currentCategoryFilter;
-        let timeMatch = false;
-        if (currentTimeFilter === 'all') { timeMatch = true; }
-        else {
-            const time = parseInt(currentTimeFilter);
-            if (time === 20) timeMatch = activity.time <= 20;
-            else if (time === 40) timeMatch = activity.time > 20 && activity.time <= 40;
-            else if (time === 60) timeMatch = activity.time > 40;
-        }
-        return categoryMatch && timeMatch;
-    });
-
-    const activitiesToShow = filteredActivities.slice(0, visibleActivitiesCount);
-    activitiesGrid.innerHTML = '';
-
-    if (activitiesToShow.length === 0) {
-        activitiesGrid.innerHTML = `<p class="text-center col-span-full">לא נמצאו פעילויות התואמות את הסינון.</p>`;
-    } else {
-        activitiesToShow.forEach(activity => {
-            activitiesGrid.innerHTML += createActivityCard(activity);
-        });
-    }
-
-    const loadMoreContainer = document.getElementById('load-more-container');
-    if (filteredActivities.length > visibleActivitiesCount) {
-        loadMoreContainer.classList.remove('hidden');
-    } else {
-        loadMoreContainer.classList.add('hidden');
-    }
-};
-
-function handleLoadMore() {
-    visibleActivitiesCount += activitiesIncrement;
-    renderActivities();
-}
-
-let suitcaseImageBase64 = null;
-let itemsImageBase64 = null;
-
-function setupPackingAssistant() {
-    const suitcaseInput = document.getElementById('suitcase-image-input');
-    const itemsInput = document.getElementById('items-image-input');
-    const uploadSuitcaseBtn = document.getElementById('upload-suitcase-btn');
-    const uploadItemsBtn = document.getElementById('upload-items-btn');
-    const getSuggestionBtn = document.getElementById('get-packing-suggestion-btn');
-
-    uploadSuitcaseBtn.addEventListener('click', () => suitcaseInput.click());
-    uploadItemsBtn.addEventListener('click', () => itemsInput.click());
-
-    suitcaseInput.addEventListener('change', (event) => handleImageUpload(event, 'suitcase'));
-    itemsInput.addEventListener('change', (event) => handleImageUpload(event, 'items'));
-
-    getSuggestionBtn.addEventListener('click', handlePackingSuggestion);
-}
-
-function handleImageUpload(event, type) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const base64String = e.target.result;
-        const preview = document.getElementById(`${type}-preview`);
-        const placeholder = document.getElementById(`${type}-placeholder`);
-
-        preview.src = base64String;
-        preview.classList.remove('hidden');
-        placeholder.classList.add('hidden');
-
-        if (type === 'suitcase') {
-            suitcaseImageBase64 = base64String.split(',')[1];
-        } else {
-            itemsImageBase64 = base64String.split(',')[1];
-        }
-
-        if (suitcaseImageBase64 && itemsImageBase64) {
-            document.getElementById('get-packing-suggestion-btn').disabled = false;
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
-async function handlePackingSuggestion() {
-    if (!suitcaseImageBase64 || !itemsImageBase64) {
-        alert("אנא העלה תמונה של המזוודה וגם של הציוד.");
-        return;
-    }
-
-    const resultContainer = document.getElementById('packing-suggestion-result');
-    resultContainer.innerHTML = '<div class="flex justify-center"><div class="loader"></div></div>';
-
-    const prompt = "You are a packing expert. Based on the image of the suitcase and the image of the items, provide a step-by-step packing plan in Hebrew. Be specific about the order and placement of items to maximize space. For example: '1. Start by placing the shoes along the sides. 2. Roll the trousers and place them at the bottom...'";
-
-    const parts = [
-        { text: prompt },
-        { inlineData: { mimeType: 'image/jpeg', data: suitcaseImageBase64 } },
-        { inlineData: { mimeType: 'image/jpeg', data: itemsImageBase64 } }
-    ];
-
-    const response = await callGeminiWithParts(parts);
-    resultContainer.innerHTML = response.replace(/\n/g, '<br>');
-}
-
-function setupPackingGuideModal() {
-    const modal = document.getElementById('packing-guide-modal');
-    if (!modal) return;
-    
-    renderChecklist();
-    renderLuggage();
-
-    const accordionButtons = modal.querySelectorAll('.accordion-button');
-    accordionButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const content = button.nextElementSibling;
-            button.classList.toggle('open');
-            if (content.style.maxHeight) {
-                content.style.maxHeight = null;
-            } else {
-                content.style.maxHeight = content.scrollHeight + "px";
-            }
-        });
-    });
-
-    const progressBar = document.getElementById('packingProgressBar');
-    const checkboxes = modal.querySelectorAll('#checklist-container input[type="checkbox"]');
-    const totalCheckboxes = checkboxes.length;
-
-    const updateProgress = () => {
-        const checkedCount = modal.querySelectorAll('#checklist-container input[type="checkbox"]:checked').length;
-        const percentage = totalCheckboxes > 0 ? (checkedCount / totalCheckboxes) * 100 : 0;
-        progressBar.style.width = percentage + '%';
-    };
-
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateProgress);
-    });
-    updateProgress();
-
-    setupPackingAssistant();
-}
-
-function renderChecklist() {
-    const container = document.getElementById('checklist-container');
-    if (!container) return;
-    let html = '';
-    for (const category in packingListData) {
-        html += `<div class="mb-4">
-            <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
-            <div class="space-y-2">
-                ${packingListData[category].map(item => `
-                    <label class="flex items-center">
-                        <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded">
-                        <span class="mr-3 text-gray-700">${item}</span>
-                    </label>
-                `).join('')}
-            </div>
-        </div>`;
-    }
-    container.innerHTML = html;
-}
-
-function renderLuggage() {
-    const container = document.getElementById('luggage-list-container');
-    if (!container) return;
-    container.innerHTML = luggageData.map(item => `
-        <div class="bg-secondary p-4 rounded-lg">
-            <h4 class="font-bold text-lg">${item.name}</h4>
-            <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
-            <p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>
-            <p class="text-sm mt-1"><em>${item.notes}</em></p>
-        </div>
-    `).join('');
-}
-
 
 function setupEventListeners() {
+    // Activity Filters
     document.querySelectorAll('.btn-filter[data-filter]').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.btn-filter[data-filter]').forEach(btn => btn.classList.remove('active'));
@@ -624,61 +423,62 @@ function setupEventListeners() {
             renderActivities();
         });
     });
-    document.querySelector('.btn-filter[data-time-filter="all"]').classList.add('active');
+    
+    document.getElementById('load-more-btn').addEventListener('click', () => {
+        visibleActivitiesCount += activitiesIncrement;
+        renderActivities();
+    });
 
-    document.getElementById('load-more-btn').addEventListener('click', handleLoadMore);
-
+    // Mobile Menu
     const menuBtn = document.getElementById('menu-btn');
     const mobileMenu = document.getElementById('mobile-menu');
     menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
-    
     mobileMenu.querySelectorAll('a, button').forEach(link => {
-        link.addEventListener('click', () => {
-            mobileMenu.classList.add('hidden');
+        link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+    });
+
+    // Modal Openers
+    document.querySelectorAll('[id^=open-][id$=-btn], [id^=open-][id$=-btn-mobile], .nav-family-btn, .nav-nearby-btn, .nav-gemini-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            let modalId;
+            if(e.currentTarget.id) {
+                 modalId = e.currentTarget.id.replace('open-', '').replace('-btn-mobile', '').replace('-btn', '') + '-modal';
+            } else if (e.currentTarget.classList.contains('nav-family-btn')) {
+                modalId = 'family-details-modal';
+                populateFamilyDetails();
+            } else if (e.currentTarget.classList.contains('nav-nearby-btn')) {
+                modalId = 'nearby-modal';
+                findAndDisplayNearby();
+            } else if (e.currentTarget.classList.contains('nav-gemini-btn')) {
+                modalId = 'gemini-chat-modal';
+            }
+             if(modalId === 'packing-guide-modal') {
+                setupPackingGuideModal();
+            }
+            if(modalId) document.getElementById(modalId).classList.remove('hidden');
         });
     });
 
-    const modals = {
-        'packing-guide': { open: ['#open-packing-modal-btn', '#open-packing-modal-btn-mobile'], onOpen: setupPackingGuideModal },
-        'nearby': { open: ['.nav-nearby-btn'], onOpen: findAndDisplayNearby },
-        'hotel-booking': { open: ['#open-hotel-modal-btn'] },
-        'flights-details': { open: ['#open-flights-modal-btn'], onOpen: populateFlightDetails },
-        'family-details': { open: ['.nav-family-btn'], onOpen: populateFamilyDetails },
-        'gemini-chat': { open: ['.nav-gemini-btn'] },
-        'story': { open: ['.gemini-story-btn'], onOpen: handleStoryRequest },
-        'text-response': {},
-        'boarding-pass': {open: ['#show-boarding-passes-btn'], onOpen: showBoardingPasses}
-    };
+    document.getElementById('show-boarding-passes-btn').addEventListener('click', showBoardingPasses);
 
-    for (const modalId in modals) {
-        const modalElement = document.getElementById(`${modalId}-modal`);
-        if (!modalElement) continue;
-
-        const config = modals[modalId];
-
-        if (config.open) {
-            config.open.forEach(selector => {
-                document.querySelectorAll(selector).forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                         if (config.onOpen) {
-                            config.onOpen(e); // Pass event to handler if needed
-                        } else {
-                            modalElement.classList.remove('hidden');
-                            modalElement.classList.add('flex');
-                        }
-                    });
-                });
-            });
+    // Dynamic Modal Opener for Fullscreen Photos
+    document.body.addEventListener('click', e => {
+        if (e.target.id === 'open-photos-fullscreen-btn') {
+            const modal = document.getElementById('photos-fullscreen-modal');
+            const content = document.getElementById('photos-fullscreen-content');
+            content.innerHTML = `<iframe src="${tripData.photoAlbumEmbed}" class="w-full h-full" frameborder="0"></iframe>`;
+            modal.classList.remove('hidden');
         }
-    }
-    
+    });
+
+    // General Modal Closers
     document.querySelectorAll('.modal-close-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.target.closest('.modal').classList.add('hidden');
-            e.target.closest('.modal').classList.remove('flex');
         });
     });
 
+    // Chat
     const chatInput = document.getElementById('chat-input');
     document.getElementById('chat-send-btn').addEventListener('click', handleChatSend);
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleChatSend(); });
@@ -686,65 +486,21 @@ function setupEventListeners() {
     document.getElementById('chat-image-input').addEventListener('change', handleChatImageUpload);
     document.getElementById('chat-remove-image-btn').addEventListener('click', removeChatImage);
 
+    // AI Buttons
     document.querySelectorAll('.gemini-plan-btn').forEach(button => button.addEventListener('click', handlePlanRequest));
     document.querySelectorAll('.gemini-summary-btn').forEach(button => button.addEventListener('click', handleSummaryRequest));
-
+    document.querySelectorAll('.gemini-story-btn').forEach(button => button.addEventListener('click', handleStoryRequest));
     document.getElementById('what-to-wear-btn').addEventListener('click', handleWhatToWearRequest);
     document.getElementById('generate-custom-plan-btn').addEventListener('click', handleCustomPlanRequest);
     
-    // NEW: Event listener for the photo gallery button
+    // Photo Album
     document.getElementById('load-photos-btn').addEventListener('click', handlePhotoAlbumLoad);
 }
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-}
-
-function findAndDisplayNearby() {
-    const resultsContainer = document.getElementById('nearby-results');
-    resultsContainer.innerHTML = '<p>מאתר את מיקומך...</p>';
-
-    if (!navigator.geolocation) {
-        resultsContainer.innerHTML = '<p>שירותי מיקום אינם נתמכים.</p>';
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const { latitude, longitude } = position.coords;
-            const nearbyPlaces = activitiesData
-                .filter(place => ['משחקייה', 'חוץ', 'בית מרקחת'].includes(place.category))
-                .map(place => ({ ...place, calculatedDistance: calculateDistance(latitude, longitude, place.lat, place.lon) }))
-                .sort((a, b) => a.calculatedDistance - b.calculatedDistance);
-
-            const playgrounds = nearbyPlaces.filter(p => ['משחקייה', 'חוץ'].includes(p.category)).slice(0, 5);
-            const pharmacies = nearbyPlaces.filter(p => p.category === 'בית מרקחת').slice(0, 3);
-
-            resultsContainer.innerHTML = `
-                <div>
-                    <h4 class="font-bold text-lg mb-2">משחקיות ופארקים קרובים:</h4>
-                    <ul class="list-disc pr-5 space-y-1">${playgrounds.map(p => `<li><strong>${p.name}</strong> - כ-${p.calculatedDistance.toFixed(1)} ק"מ</li>`).join('')}</ul>
-                </div>
-                <div class="border-t pt-4 mt-4">
-                    <h4 class="font-bold text-lg mb-2">בתי מרקחת קרובים:</h4>
-                    <ul class="list-disc pr-5 space-y-1">${pharmacies.map(p => `<li><strong>${p.name}</strong> - כ-${p.calculatedDistance.toFixed(1)} ק"מ</li>`).join('')}</ul>
-                </div>
-            `;
-        },
-        () => {
-            resultsContainer.innerHTML = '<p>לא ניתן היה לקבל את מיקומך.</p>';
-        }
-    );
-}
-
 function populateFamilyDetails() {
+    if (!tripData.familyData) return;
     const container = document.getElementById('family-details-content');
-    container.innerHTML = familyData.map(member => `
+    container.innerHTML = tripData.familyData.map(member => `
         <div class="flex justify-between p-2 border-b">
             <span class="font-semibold">${member.name}:</span>
             <span>${member.passport}</span>
@@ -756,53 +512,43 @@ function getStatusClass(status) {
     switch (status.toLowerCase()) {
         case 'on time': return 'bg-green-100 text-green-800';
         case 'delayed': return 'bg-red-100 text-red-800';
-        case 'canceled': return 'bg-red-200 text-red-900 font-bold';
         default: return 'bg-gray-100 text-gray-800';
     }
 }
 
 function populateFlightDetails() {
+    if (!tripData.flightData) return;
+    const { flightData } = tripData;
     const container = document.getElementById('flight-details-content');
     const flightSections = [
         { title: 'טיסות הלוך - יום ראשון, 24 באוגוסט 2025', flights: flightData.outbound, connection: flightData.connections.outbound },
         { title: 'טיסות חזור - יום שישי, 29 באוגוסט 2025', flights: flightData.inbound, connection: flightData.connections.inbound }
     ];
-
     let html = '';
     flightSections.forEach(section => {
         html += `
             <div>
                 <h4 class="font-bold text-xl mb-3 border-b pb-2 text-accent">${section.title}</h4>
                 <div class="space-y-4 text-sm">
-                    ${section.flights.map((flight, index) => {
-                        const flightKey = (section.title.includes('הלוך') ? 'outbound' : 'inbound') + (index + 1);
-                        const seatKey = 'seat' + flightKey.charAt(0).toUpperCase() + flightKey.slice(1);
-                        return `
+                    ${section.flights.map((flight) => `
                         <div class="p-2 rounded-lg hover:bg-gray-50 border-b">
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
-                                <div class="md:col-span-2">
+                                <div class="md:col-span-3">
                                     <p><strong>${flight.from} ← ${flight.to}</strong></p>
                                     <p class="text-gray-600">${flight.time} | ${flight.airline} ${flight.flightNum}</p>
                                 </div>
                                 <div class="text-center">
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(flight.status)}">${flight.status}</span>
                                 </div>
-                                <a href="${flight.checkin}" target="_blank" class="text-white bg-green-500 hover:bg-green-600 text-center py-1 px-2 rounded-md text-xs md:col-span-1">בצע צ'ק אין</a>
-                            </div>
-                            <div class="mt-3 pt-3 border-t text-xs">
-                                <h5 class="font-semibold mb-1">נוסעים ומושבים:</h5>
-                                <ul class="list-disc pr-4">
-                                    ${flightData.passengers.map(p => `<li>${p.name}: <strong>${p[seatKey]}</strong></li>`).join('')}
-                                </ul>
+                                <a href="${flight.checkin}" target="_blank" class="text-white bg-green-500 hover:bg-green-600 text-center py-1 px-2 rounded-md text-xs">בצע צ'ק אין</a>
                             </div>
                         </div>
-                    `}).join(`<p class="pl-4 border-r-2 border-gray-200 my-2"><strong>קונקשן באתונה:</strong> ${section.connection}</p>`)}
+                    `).join(`<p class="pl-4 border-r-2 border-gray-200 my-2"><strong>קונקשן באתונה:</strong> ${section.connection}</p>`)}
                 </div>
             </div>
         `;
     });
-
-    html += `
+     html += `
         <div>
             <h4 class="font-bold text-xl mb-3 border-b pb-2 text-accent">כבודה</h4>
             <ul class="list-disc pr-5 space-y-1 text-sm">
@@ -813,16 +559,15 @@ function populateFlightDetails() {
     container.innerHTML = html;
 }
 
-const dailySpecials = {
-    '2025-08-24': 'ברוכים הבאים! אחרי התמקמות, צאו לשיט רגוע באגם עם סירות ה-"Mouettes Genevoises" הצהובות.',
-    '2025-08-25': 'טיפ יומי: קחו את הרכבת המיניאטורית ב-Jardin Anglais. היא חוויה נהדרת לפעוטות ומציעה תצפית יפה על שעון הפרחים.',
-    '2025-08-26': 'פנינה נסתרת: גלו את Parc des Franchises, פארק ענק עם מתקני משחקים פנטסטיים, אהוב במיוחד על משפחות מקומיות.',
-    '2025-08-27': 'היום יום שוק! בקרו בשוק פלנפלה (Plainpalais Market) בבוקר כדי ליהנות מתוצרת טרייה, מטעמים מקומיים ואווירה תוססת.',
-    '2025-08-28': 'אירוע מיוחד: ב-Bains des Pâquis מתקיימת היום שעת סיפור לילדים בבוקר. התחלה מושלמת ליום על שפת האגם!',
-    '2025-08-29': 'פינוק ליום האחרון: לפני הנסיעה לשדה התעופה, אל תשכחו לקנות שוקולד טעים מאחת השוקולטריות המקומיות כמו Favarger או Auer.'
-};
-
 function displayDailyAttraction() {
+    const dailySpecials = {
+        '2025-08-24': 'ברוכים הבאים! אחרי התמקמות, צאו לשיט רגוע באגם עם סירות ה-"Mouettes Genevoises" הצהובות.',
+        '2025-08-25': 'טיפ יומי: קחו את הרכבת המיניאטורית ב-Jardin Anglais. היא חוויה נהדרת לפעוטות ומציעה תצפית יפה על שעון הפרחים.',
+        '2025-08-26': 'פנינה נסתרת: גלו את Parc des Franchises, פארק ענק עם מתקני משחקים פנטסטיים, אהוב במיוחד על משפחות מקומיות.',
+        '2025-08-27': 'היום יום שוק! בקרו בשוק פלנפלה (Plainpalais Market) בבוקר כדי ליהנות מתוצרת טרייה, מטעמים מקומיים ואווירה תוססת.',
+        '2025-08-28': 'אירוע מיוחד: ב-Bains des Pâquis מתקיימת היום שעת סיפור לילדים בבוקר. התחלה מושלמת ליום על שפת האגם!',
+        '2025-08-29': 'פינוק ליום האחרון: לפני הנסיעה לשדה התעופה, אל תשכחו לקנות שוקולד טעים מאחת השוקולטריות המקומיות כמו Favarger או Auer.'
+    };
     const container = document.getElementById('daily-special-content');
     const today = new Date();
     const tripDates = Object.keys(dailySpecials);
@@ -831,28 +576,18 @@ function displayDailyAttraction() {
     container.innerHTML = `<p>${special}</p>`;
 }
 
-function getOpeningHoursForDay(activity, dayIndex) {
-    const tripStartDate = new Date('2025-08-24T00:00:00');
-    const currentDay = new Date(tripStartDate);
-    currentDay.setDate(tripStartDate.getDate() + dayIndex);
-    const dayOfWeek = currentDay.getDay(); 
-    if (!activity.openingHours) return 'לא זמין';
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const todayName = dayNames[dayOfWeek];
-    for (const key in activity.openingHours) {
-        if (key.includes(todayName) || key.toLowerCase() === 'everyday') {
-            return `פתוח היום: ${activity.openingHours[key]}`;
-        }
-        const days = key.split('-');
-        if (days.length === 2) {
-            const startDay = dayNames.indexOf(days[0]);
-            const endDay = dayNames.indexOf(days[1]);
-            if (dayOfWeek >= startDay && dayOfWeek <= endDay) {
-                return `פתוח היום: ${activity.openingHours[key]}`;
+function populateItineraryDetails() {
+    if (!tripData.activities) return;
+    document.querySelectorAll('[data-day-index]').forEach(dayElement => {
+        const dayIndexOfTrip = parseInt(dayElement.dataset.dayIndex, 10);
+        dayElement.querySelectorAll('[data-activity-details]').forEach(element => {
+            const activityName = element.dataset.activityDetails;
+            const activity = tripData.activities.find(a => a.name === activityName);
+            if (activity) {
+                element.innerHTML = createActivitySnippetHTML(activity, dayIndexOfTrip);
             }
-        }
-    }
-    return 'סגור היום';
+        });
+    });
 }
 
 function createActivitySnippetHTML(activity, dayIndex) {
@@ -864,23 +599,60 @@ function createActivitySnippetHTML(activity, dayIndex) {
             <div class="flex items-start"><span class="w-5 text-center">🕒</span><p>כ-${activity.time} דקות</p></div>
             <div class="flex items-start"><span class="w-5 text-center">💰</span><p>${activity.cost}</p></div>
             <div class="flex items-start"><span class="w-5 text-center">📍</span><p>${activity.address}</p></div>
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${activity.lat},${activity.lon}" target="_blank" class="inline-block text-accent font-semibold hover:underline">פתח ניווט</a>
+            <a href="[https://www.google.com/maps/dir/?api=1&destination=$](https://www.google.com/maps/dir/?api=1&destination=$){activity.lat},${activity.lon}" target="_blank" class="inline-block text-accent font-semibold hover:underline">פתח ניווט</a>
         </div>
     `;
 }
 
-function populateItineraryDetails() {
-    document.querySelectorAll('[data-day-index]').forEach(dayElement => {
-        const dayIndexOfTrip = parseInt(dayElement.dataset.dayIndex, 10);
-        dayElement.querySelectorAll('[data-activity-details]').forEach(element => {
-            const activityName = element.dataset.activityDetails;
-            const activity = activitiesData.find(a => a.name === activityName);
-            if (activity) {
-                element.innerHTML = createActivitySnippetHTML(activity, dayIndexOfTrip);
-            }
-        });
-    });
+function getOpeningHoursForDay(activity, dayIndex) {
+    const tripStartDate = new Date('2025-08-24T00:00:00');
+    const currentDay = new Date(tripStartDate);
+    currentDay.setDate(tripStartDate.getDate() + dayIndex);
+    const dayOfWeek = currentDay.getDay(); 
+    if (!activity.openingHours) return 'לא זמין';
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayName = dayNames[dayOfWeek];
+    for (const key in activity.openingHours) {
+        if (key.includes(todayName) || key.toLowerCase() === 'everyday') return `פתוח היום: ${activity.openingHours[key]}`;
+        const days = key.split('-');
+        if (days.length === 2) {
+            const startDay = dayNames.indexOf(days[0]);
+            const endDay = dayNames.indexOf(days[1]);
+            if (dayOfWeek >= startDay && dayOfWeek <= endDay) return `פתוח היום: ${activity.openingHours[key]}`;
+        }
+    }
+    return 'סגור היום';
 }
+
+function setupPackingGuideModal() {
+    if (!tripData.packingListData || !tripData.luggageData) return;
+    renderChecklist();
+    renderLuggage();
+}
+
+function renderChecklist() {
+    const container = document.getElementById('checklist-container');
+    if (!container || !tripData.packingListData) return;
+    let html = '';
+    for (const category in tripData.packingListData) {
+        html += `<div class="mb-4"><h4 class="font-bold text-lg mb-2 text-accent">${category}</h4><div class="space-y-2">${tripData.packingListData[category].map(item => `<label class="flex items-center"><input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded"><span class="mr-3 text-gray-700">${item}</span></label>`).join('')}</div></div>`;
+    }
+    container.innerHTML = html;
+}
+
+function renderLuggage() {
+    const container = document.getElementById('luggage-list-container');
+    if (!container || !tripData.luggageData) return;
+    container.innerHTML = tripData.luggageData.map(item => `
+        <div class="bg-secondary p-4 rounded-lg">
+            <h4 class="font-bold text-lg">${item.name}</h4>
+            <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
+            <p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>
+            <p class="text-sm mt-1"><em>${item.notes}</em></p>
+        </div>
+    `).join('');
+}
+
 
 // =================================================================================
 // GEMINI API & AI FEATURES
@@ -894,6 +666,7 @@ async function callGeminiWithParts(parts, jsonSchema = null) {
         if (jsonSchema) {
             payload.generationConfig = { responseMimeType: "application/json", responseSchema: jsonSchema };
         }
+        // This assumes you have a Netlify function named 'gemini'
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -910,6 +683,7 @@ async function callGeminiWithParts(parts, jsonSchema = null) {
         return jsonSchema ? "[]" : "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
 }
+
 
 async function handleChatSend() {
     const chatInput = document.getElementById('chat-input');
@@ -976,19 +750,10 @@ async function handleStoryRequest(event) {
 
     storyContent.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
     storyModal.classList.remove('hidden');
-    storyModal.classList.add('flex');
 
     const prompt = `You are a children's storyteller. Write a short, simple, and happy bedtime story in Hebrew for two toddlers, Bar (a girl) and Ran (a boy), ages 2 and 3. The story should be about their adventure today in Geneva, where they visited ${mainActivityName}. Make it magical and fun.`;
     const geminiResponse = await callGeminiWithParts([{ text: prompt }]);
     storyContent.innerHTML = geminiResponse.replace(/\n/g, '<br>');
-}
-
-function showTextResponseModal(title, content) {
-    const modal = document.getElementById('text-response-modal');
-    document.getElementById('text-response-modal-title').textContent = title;
-    document.getElementById('text-response-modal-content').innerHTML = content.replace(/\n/g, '<br>');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
 }
 
 async function handleWhatToWearRequest() {
@@ -1021,30 +786,6 @@ async function handleSummaryRequest(event) {
     showTextResponseModal(`✨ סיכום לילדים - ${title} ✨`, geminiResponse);
 }
 
-function handleChatImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const base64String = e.target.result;
-        chatImageBase64 = base64String.split(',')[1];
-        
-        const previewContainer = document.getElementById('chat-image-preview-container');
-        const previewImg = document.getElementById('chat-image-preview');
-        
-        previewImg.src = base64String;
-        previewContainer.classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
-}
-
-function removeChatImage() {
-    chatImageBase64 = null;
-    document.getElementById('chat-image-preview-container').classList.add('hidden');
-    document.getElementById('chat-image-input').value = '';
-}
-
 async function handleCustomPlanRequest() {
     const promptInput = document.getElementById('custom-plan-prompt');
     const resultContainer = document.getElementById('custom-plan-result');
@@ -1057,15 +798,141 @@ async function handleCustomPlanRequest() {
 
     resultContainer.innerHTML = '<div class="flex justify-center"><div class="loader"></div></div>';
 
-    const availableActivities = activitiesData.map(a => `- ${a.name} (${a.category}): ${a.description}`).join('\n');
-    const fullPrompt = `You are a creative trip planner for a family with a 2 and 3-year-old in Geneva. Their hotel is near the Zimeysa train station. They want a plan for a day that feels like: "${userPrompt}". 
-    
-    Here is a list of available activities:
-    ${availableActivities}
-
-    Create a simple, step-by-step, half-day or full-day itinerary (morning, lunch, afternoon). Suggest 2-3 real, relevant activities from the list and a suitable, simple lunch spot. Provide travel times between locations using public transport. Respond in Hebrew.`;
+    const availableActivities = tripData.activities.map(a => `- ${a.name} (${a.category}): ${a.description}`).join('\n');
+    const fullPrompt = `You are a creative trip planner for a family with a 2 and 3-year-old in Geneva. Their hotel is near the Zimeysa train station. They want a plan for a day that feels like: "${userPrompt}". \n\n    Here is a list of available activities:\n    ${availableActivities}\n\n    Create a simple, step-by-step, half-day or full-day itinerary (morning, lunch, afternoon). Suggest 2-3 real, relevant activities from the list and a suitable, simple lunch spot. Provide travel times between locations using public transport. Respond in Hebrew.`;
 
     const geminiResponse = await callGeminiWithParts([{ text: fullPrompt }]);
     resultContainer.innerHTML = `<div class="gemini-plan-result">${geminiResponse.replace(/\n/g, '<br>')}</div>`;
+}
+
+function handleChatImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const base64String = e.target.result;
+        chatImageBase64 = base64String.split(',')[1];
+        
+        document.getElementById('chat-image-preview').src = base64String;
+        document.getElementById('chat-image-preview-container').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeChatImage() {
+    chatImageBase64 = null;
+    document.getElementById('chat-image-preview-container').classList.add('hidden');
+    document.getElementById('chat-image-input').value = '';
+}
+
+
+function showTextResponseModal(title, content) {
+    const modal = document.getElementById('text-response-modal');
+    document.getElementById('text-response-modal-title').textContent = title;
+    document.getElementById('text-response-modal-content').innerHTML = content.replace(/\n/g, '<br>');
+    modal.classList.remove('hidden');
+}
+
+function findAndDisplayNearby() {
+    const resultsContainer = document.getElementById('nearby-results');
+    resultsContainer.innerHTML = '<p>מאתר את מיקומך...</p>';
+
+    if (!navigator.geolocation) {
+        resultsContainer.innerHTML = '<p>שירותי מיקום אינם נתמכים.</p>';
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+            const nearbyPlaces = tripData.activities
+                .filter(place => ['משחקייה', 'חוץ', 'בית מרקחת'].includes(place.category))
+                .map(place => ({ ...place, calculatedDistance: calculateDistance(latitude, longitude, place.lat, place.lon) }))
+                .sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+
+            const playgrounds = nearbyPlaces.filter(p => ['משחקייה', 'חוץ'].includes(p.category)).slice(0, 5);
+            const pharmacies = nearbyPlaces.filter(p => p.category === 'בית מרקחת').slice(0, 3);
+
+            resultsContainer.innerHTML = `
+                <div>
+                    <h4 class="font-bold text-lg mb-2">משחקיות ופארקים קרובים:</h4>
+                    <ul class="list-disc pr-5 space-y-1">${playgrounds.map(p => `<li><strong>${p.name}</strong> - כ-${p.calculatedDistance.toFixed(1)} ק"מ</li>`).join('')}</ul>
+                </div>
+                <div class="border-t pt-4 mt-4">
+                    <h4 class="font-bold text-lg mb-2">בתי מרקחת קרובים:</h4>
+                    <ul class="list-disc pr-5 space-y-1">${pharmacies.map(p => `<li><strong>${p.name}</strong> - כ-${p.calculatedDistance.toFixed(1)} ק"מ</li>`).join('')}</ul>
+                </div>
+            `;
+        },
+        () => {
+            resultsContainer.innerHTML = '<p>לא ניתן היה לקבל את מיקומך.</p>';
+        }
+    );
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180; 
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2)
+        ; 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const d = R * c; // Distance in km
+    return d;
+}
+
+async function fetchAndRenderWeather() {
+    const forecastContainer = document.getElementById('weather-forecast');
+    const whatToWearBtn = document.getElementById('what-to-wear-btn');
+    const startDate = '2025-08-24';
+    const endDate = '2025-08-29';
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=46.20&longitude=6.14&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe/Berlin&start_date=${startDate}&end_date=${endDate}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        currentWeatherData = data; 
+
+        forecastContainer.innerHTML = '';
+
+        data.daily.time.forEach((dateStr, i) => {
+            const date = new Date(dateStr);
+            const day = date.toLocaleDateString('he-IL', { weekday: 'long' });
+            const dayMonth = `${date.getDate()}.${date.getMonth() + 1}`;
+            const tempMax = Math.round(data.daily.temperature_2m_max[i]);
+            const tempMin = Math.round(data.daily.temperature_2m_min[i]);
+            const weather = getWeatherInfo(data.daily.weathercode[i]);
+
+            forecastContainer.innerHTML += `
+                <div class="bg-secondary text-center p-4 rounded-lg shadow flex-shrink-0 w-full sm:w-auto flex-1">
+                    <div class="font-bold text-lg">${day}, ${dayMonth}</div>
+                    <div class="text-4xl my-2">${weather.icon}</div>
+                    <div class="font-semibold">${tempMin}°/${tempMax}°</div>
+                    <div class="text-sm text-gray-600">${weather.description}</div>
+                </div>
+            `;
+        });
+        whatToWearBtn.classList.remove('hidden');
+    } catch (error) {
+        console.error("Failed to fetch weather:", error);
+        forecastContainer.innerHTML = '<p class="text-center w-full col-span-full">לא ניתן היה לטעון את תחזית מזג האוויר.</p>';
+    }
+}
+
+function getWeatherInfo(code) {
+    const codes = {
+        0: { description: "בהיר", icon: "☀️" }, 1: { description: "בהיר", icon: "☀️" },
+        2: { description: "מעונן חלקית", icon: "🌤️" }, 3: { description: "מעונן", icon: "☁️" },
+        45: { description: "ערפילי", icon: "🌫️" }, 48: { description: "ערפילי", icon: "🌫️" },
+        51: { description: "טפטוף קל", icon: "🌦️" }, 53: { description: "טפטוף", icon: "🌦️" },
+        55: { description: "טפטוף", icon: "🌦️" }, 61: { description: "גשם קל", icon: "🌧️" },
+        63: { description: "גשם", icon: "🌧️" }, 65: { description: "גשם חזק", icon: "🌧️" },
+        80: { description: "ממטרים", icon: "🌦️" }, 81: { description: "ממטרים", icon: "🌦️" },
+        82: { description: "ממטרים", icon: "🌦️" }, 95: { description: "סופת רעמים", icon: "⛈️" },
+    };
+    return codes[code] || { description: "לא ידוע", icon: "🤷" };
 }
 

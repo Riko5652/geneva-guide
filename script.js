@@ -53,7 +53,7 @@ const familyData = [
     { name: 'רן ליפץ', passport: '40751154' }
 ];
 
-// **RESTORED** - Packing list data
+// Packing list data
 const packingListData = {
     "מסמכים וכסף": ["דרכונים", "צילומי דרכונים", "כרטיסי טיסה", "אישורי מלון", "רישיון נהיגה", "ביטוח נסיעות", "כסף מקומי (פרנק שוויצרי)", "כרטיסי אשראי"],
     "ביגוד (מבוגרים)": ["מעיל גשם/רוח", "פליז/סווטשירט (3)", "חולצות קצרות (5)", "חולצות ארוכות (2)", "מכנסיים ארוכים (2)", "בגדי ערב (1)", "הלבשה תחתונה וגרביים (6 סטים)"],
@@ -63,7 +63,7 @@ const packingListData = {
     "אלקטרוניקה": ["טלפונים ומטענים", "מטען נייד", "מתאם שקעים אירופאי", "אוזניות"]
 };
 
-// **RESTORED** - Luggage data
+// Luggage data
 const luggageData = [
     { name: "מזוודה גדולה", owner: "משותף", weight: "עד 23 ק\"ג", notes: "לשלוח לבטן המטוס. מכילה את רוב הבגדים והציוד." },
     { name: "טרולי עלייה למטוס", owner: "דור", weight: "עד 8 ק\"ג", notes: "מכיל בגדים להחלפה, מסמכים חשובים וציוד חיוני." },
@@ -71,10 +71,21 @@ const luggageData = [
     { name: "עגלה", owner: "ילדים", weight: "-", notes: "נשלחת בשער העלייה למטוס." }
 ];
 
+// **NEW** - Time sensitive actions data
+const timeSensitiveActions = [
+    { start: -30, end: -8, title: "⏳ חודש לטיסה: משימות חשובות", content: "<ul class='list-disc pr-5 text-left'><li>ודאו שכל הדרכונים בתוקף לפחות ל-6 חודשים מיום החזרה.</li><li>צלמו את כל המסמכים החשובים ושמרו עותק בענן (Google Drive, Dropbox).</li><li>רכשו פרנקים שוויצריים ואירו (לצרפת).</li><li>בדקו את מלאי התרופות וציוד העזרה הראשונה.</li></ul>" },
+    { start: -7, end: -3, title: "⏰ שבוע לטיסה: מתחילים לארוז!", content: "<ul class='list-disc pr-5 text-left'><li>התחילו לרכז את כל הפריטים מרשימת האריזה.</li><li>כבסו את כל הבגדים שאתם מתכננים לקחת.</li><li>רכשו חטיפים וצעצועים קטנים להעסיק את הילדים בטיסה.</li></ul>" },
+    { start: -2, end: -1, title: "✈️ יומיים לטיסה: צ'ק-אין ואריזות אחרונות", content: "<ul class='list-disc pr-5 text-left'><li>בצעו צ'ק-אין אונליין לטיסות. האפשרות נפתחת בדרך כלל 24-48 שעות לפני הטיסה.</li><li>ארזו את המזוודות ושקלו אותן כדי לוודא שאתם עומדים במגבלות.</li><li>הטעינו את כל המכשירים האלקטרוניים והמטענים הניידים.</li></ul>" },
+    { start: 0, end: 0, title: "☀️ יום הטיסה: יצאנו לדרך!", content: "<ul class='list-disc pr-5 text-left'><li>זכרו לקחת את תיק המסמכים והדרכונים!</li><li>בדקו שוב ששום דבר חיוני לא נשכח בבית.</li><li>הגיעו לשדה התעופה לפחות 3 שעות לפני ההמראה. נסיעה טובה!</li></ul>" }
+];
+
+
 // Global state variables
 let currentWeatherData = null;
 let chatImageBase64 = null;
-let map = null; // To hold the map instance
+let map = null;
+let visibleActivitiesCount = 6;
+const activitiesIncrement = 6;
 
 // =================================================================================
 // INITIALIZATION
@@ -87,13 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     displayDailyAttraction();
     populateItineraryDetails();
-    setupPackingGuideModal(); // This now includes rendering the restored list
+    setupPackingGuideModal();
     updateProgressBar();
+    displayCurrentActions();
     setInterval(updateProgressBar, 60000);
 });
 
 // =================================================================================
-// NEW CORE FEATURES
+// NEW & UPDATED CORE FEATURES
 // =================================================================================
 
 function initMap() {
@@ -183,6 +195,23 @@ function updateProgressBar() {
     document.getElementById('progress-bar-info').textContent = infoText;
 }
 
+function displayCurrentActions() {
+    const now = new Date();
+    const flightDate = new Date('2025-08-24T00:00:00');
+    const daysUntilFlight = Math.ceil((flightDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    const action = timeSensitiveActions.find(a => daysUntilFlight <= a.end && daysUntilFlight >= a.start);
+
+    const container = document.getElementById('current-actions');
+    if (action) {
+        document.getElementById('current-actions-title').textContent = action.title;
+        document.getElementById('current-actions-content').innerHTML = action.content;
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
 function showBoardingPasses() {
     const container = document.getElementById('boarding-pass-content');
     container.innerHTML = ''; 
@@ -244,9 +273,8 @@ function showBoardingPasses() {
     modal.classList.add('flex');
 }
 
-
 // =================================================================================
-// EXISTING & UPDATED FUNCTIONS
+// UI RENDERING & EVENT HANDLING
 // =================================================================================
 
 async function fetchAndRenderWeather() {
@@ -346,10 +374,8 @@ const createActivityCard = (activity) => {
                             <p><strong>כתובת:</strong> ${activity.address}</p>
                         </div>
                     </div>
-
                     ${whatToBringList}
                 </div>
-
                 <div class="flex space-x-2 space-x-reverse mt-4">
                     <a href="${activity.link || '#'}" target="_blank" class="flex-1 text-center btn-primary px-4 py-2 rounded-lg text-sm">לאתר הרשמי</a>
                     <a href="https://www.google.com/maps/dir/?api=1&destination=${activity.address}" target="_blank" class="flex-1 text-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm">ניווט ב-Maps</a>
@@ -374,16 +400,29 @@ const renderActivities = () => {
         return categoryMatch && timeMatch;
     });
 
+    const activitiesToShow = filteredActivities.slice(0, visibleActivitiesCount);
     activitiesGrid.innerHTML = '';
 
-    if (filteredActivities.length === 0) {
+    if (activitiesToShow.length === 0) {
         activitiesGrid.innerHTML = `<p class="text-center col-span-full">לא נמצאו פעילויות התואמות את הסינון.</p>`;
     } else {
-        filteredActivities.forEach(activity => {
+        activitiesToShow.forEach(activity => {
             activitiesGrid.innerHTML += createActivityCard(activity);
         });
     }
+
+    const loadMoreContainer = document.getElementById('load-more-container');
+    if (filteredActivities.length > visibleActivitiesCount) {
+        loadMoreContainer.classList.remove('hidden');
+    } else {
+        loadMoreContainer.classList.add('hidden');
+    }
 };
+
+function handleLoadMore() {
+    visibleActivitiesCount += activitiesIncrement;
+    renderActivities();
+}
 
 let suitcaseImageBase64 = null;
 let itemsImageBase64 = null;
@@ -452,20 +491,12 @@ async function handlePackingSuggestion() {
     resultContainer.innerHTML = response.replace(/\n/g, '<br>');
 }
 
-// **RESTORED & UPDATED**
 function setupPackingGuideModal() {
     const modal = document.getElementById('packing-guide-modal');
     if (!modal) return;
-
-    // Render the lists first
+    
     renderChecklist();
     renderLuggage();
-
-    const closeBtn = document.getElementById('close-packing-modal-btn');
-    closeBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    });
 
     const accordionButtons = modal.querySelectorAll('.accordion-button');
     accordionButtons.forEach(button => {
@@ -498,7 +529,6 @@ function setupPackingGuideModal() {
     setupPackingAssistant();
 }
 
-// **RESTORED**
 function renderChecklist() {
     const container = document.getElementById('checklist-container');
     if (!container) return;
@@ -519,7 +549,6 @@ function renderChecklist() {
     container.innerHTML = html;
 }
 
-// **RESTORED**
 function renderLuggage() {
     const container = document.getElementById('luggage-list-container');
     if (!container) return;
@@ -540,6 +569,7 @@ function setupEventListeners() {
             document.querySelectorAll('.btn-filter[data-filter]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             currentCategoryFilter = button.dataset.filter;
+            visibleActivitiesCount = 6;
             renderActivities();
         });
     });
@@ -549,10 +579,13 @@ function setupEventListeners() {
             document.querySelectorAll('.btn-filter[data-time-filter]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             currentTimeFilter = button.dataset.timeFilter;
+            visibleActivitiesCount = 6;
             renderActivities();
         });
     });
     document.querySelector('.btn-filter[data-time-filter="all"]').classList.add('active');
+
+    document.getElementById('load-more-btn').addEventListener('click', handleLoadMore);
 
     const menuBtn = document.getElementById('menu-btn');
     const mobileMenu = document.getElementById('mobile-menu');
@@ -565,15 +598,12 @@ function setupEventListeners() {
     });
 
     const modals = {
-        'packing-guide': { open: ['#open-packing-modal-btn', '#open-packing-modal-btn-mobile'], close: ['close-packing-modal-btn'], onOpen: setupPackingGuideModal },
-        'nearby': { open: ['.nav-nearby-btn'], close: ['close-nearby-modal-btn'], onOpen: findAndDisplayNearby },
-        'hotel-booking': { open: ['#open-hotel-modal-btn'], close: ['close-hotel-modal-btn'] },
-        'flights-details': { open: ['#open-flights-modal-btn'], close: ['close-flights-modal-btn'], onOpen: populateFlightDetails },
-        'family-details': { open: ['.nav-family-btn'], close: ['close-family-modal-btn'], onOpen: populateFamilyDetails },
-        'gemini-chat': { open: ['.nav-gemini-btn'], close: ['close-gemini-modal-btn'] },
-        'story': { close: ['close-story-modal-btn'] },
-        'text-response': { close: ['close-text-response-modal-btn'] },
-        'boarding-pass': { close: ['close-boarding-pass-modal-btn'] }
+        'packing-guide': { open: ['#open-packing-modal-btn', '#open-packing-modal-btn-mobile'], onOpen: setupPackingGuideModal },
+        'nearby': { open: ['.nav-nearby-btn'], onOpen: findAndDisplayNearby },
+        'hotel-booking': { open: ['#open-hotel-modal-btn'] },
+        'flights-details': { open: ['#open-flights-modal-btn'], onOpen: populateFlightDetails },
+        'family-details': { open: ['.nav-family-btn'], onOpen: populateFamilyDetails },
+        'gemini-chat': { open: ['.nav-gemini-btn'] },
     };
 
     for (const modalId in modals) {
@@ -593,19 +623,14 @@ function setupEventListeners() {
                 });
             });
         }
-        
-        if (config.close) {
-            config.close.forEach(selector => {
-                const closeBtn = document.getElementById(selector);
-                if(closeBtn) {
-                    closeBtn.addEventListener('click', () => {
-                        modalElement.classList.add('hidden');
-                        modalElement.classList.remove('flex');
-                    });
-                }
-            });
-        }
     }
+    
+    document.querySelectorAll('.modal-close-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.modal').classList.add('hidden');
+            e.target.closest('.modal').classList.remove('flex');
+        });
+    });
     
     document.getElementById('show-boarding-passes-btn').addEventListener('click', showBoardingPasses);
 
@@ -970,7 +995,7 @@ function handleChatImageUpload(event) {
 function removeChatImage() {
     chatImageBase64 = null;
     document.getElementById('chat-image-preview-container').classList.add('hidden');
-    document.getElementById('chat-image-input').value = ''; // Reset file input
+    document.getElementById('chat-image-input').value = '';
 }
 
 async function handleCustomPlanRequest() {

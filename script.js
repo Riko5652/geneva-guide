@@ -70,7 +70,8 @@ function renderAllComponents() {
     // Call all rendering functions
     fetchAndRenderWeather();
     renderActivities();
-    renderItinerary(); // New function for dynamic itinerary
+    renderItinerary(); 
+    renderBookingInfo(); // Added this to render booking refs
     initMap();
     setupEventListeners();
     displayDailyAttraction();
@@ -81,19 +82,21 @@ function renderAllComponents() {
 // --- DYNAMIC ITINERARY RENDERING ---
 function renderItinerary() {
     if (!currentData || !currentData.itineraryData) return;
-    const itineraryContainer = document.getElementById('plan'); // Assuming the section has id="plan"
+    const itineraryContainer = document.getElementById('plan');
     if (!itineraryContainer) return;
 
-    // Find the container for the day cards, e.g., the direct child of the section
     const dayCardsContainer = itineraryContainer.querySelector('.space-y-8');
     if (!dayCardsContainer) return;
 
-    dayCardsContainer.innerHTML = ''; // Clear any static HTML
+    dayCardsContainer.innerHTML = ''; // Clear static HTML
 
     currentData.itineraryData.forEach(dayInfo => {
         const dayCardHTML = createDayCard(dayInfo);
         dayCardsContainer.innerHTML += dayCardHTML;
     });
+    
+    // After rendering the itinerary, populate the details inside them
+    populateItineraryDetails();
 }
 
 function createDayCard(dayInfo) {
@@ -113,7 +116,7 @@ function createDayCard(dayInfo) {
             </div>`;
     };
 
-    const dayCard = `
+    return `
         <div class="bg-white p-6 rounded-xl shadow-lg border-r-4 border-accent" data-day-index="${dayInfo.dayIndex}">
             <h3 class="font-bold text-2xl mb-4 text-gray-800">יום ${dayInfo.day} (${dayInfo.dayName}): ${dayInfo.title}</h3>
             <div class="space-y-4">
@@ -142,17 +145,22 @@ function createDayCard(dayInfo) {
                 </div>
             </div>
         </div>`;
-    
-    return dayCard;
 }
 
+// --- UI AND LOGIC FUNCTIONS ---
 
-// --- REST OF THE UI AND LOGIC FUNCTIONS (Unchanged from previous correct version) ---
+function renderBookingInfo() {
+    if (!currentData || !currentData.flightData) return;
+    const bookingRefEl = document.getElementById('booking-ref-display');
+    if (bookingRefEl) {
+        bookingRefEl.innerHTML = `<strong>מספר הזמנה:</strong> ${currentData.flightData.bookingRef}`;
+    }
+}
 
 async function fetchAndRenderWeather() {
     const forecastContainer = document.getElementById('weather-forecast');
-    const whatToWearBtn = document.getElementById('what-to-wear-btn');
-    if (!forecastContainer || !whatToWearBtn) return;
+    if (!forecastContainer) return;
+    forecastContainer.innerHTML = '<p class="text-center w-full col-span-full">טוען תחזית עדכנית...</p>';
     
     const startDate = '2025-08-24';
     const endDate = '2025-08-29';
@@ -161,7 +169,8 @@ async function fetchAndRenderWeather() {
     try {
         const response = await fetch(url);
         const data = await response.json();
-        currentData.weatherData = data; // Cache weather data if needed
+        currentData.weatherData = data; 
+        const whatToWearBtn = document.getElementById('what-to-wear-btn');
 
         forecastContainer.innerHTML = '';
         data.daily.time.forEach((dateStr, i) => {
@@ -180,7 +189,7 @@ async function fetchAndRenderWeather() {
                    <div class="text-sm text-gray-600">${weather.description}</div>
                </div>`;
         });
-        whatToWearBtn.classList.remove('hidden');
+        if(whatToWearBtn) whatToWearBtn.classList.remove('hidden');
     } catch (error) {
         console.error("Failed to fetch weather:", error);
         forecastContainer.innerHTML = '<p class="text-center w-full col-span-full">לא ניתן היה לטעון את תחזית מזג האוויר.</p>';
@@ -414,7 +423,7 @@ function setupEventListeners() {
     const modals = {
         'packing-guide': { open: ['#open-packing-modal-btn', '#open-packing-modal-btn-mobile'], close: ['close-packing-modal-btn'], onOpen: setupPackingGuideModal },
         'nearby': { open: ['.nav-nearby-btn'], close: ['close-nearby-modal-btn'], onOpen: findAndDisplayNearby },
-        'hotel-booking': { open: ['#open-hotel-modal-btn'], close: ['close-hotel-modal-btn'] },
+        'hotel-booking': { open: ['#open-hotel-modal-btn'], close: ['close-hotel-modal-btn'], onOpen: populateHotelDetails },
         'flights-details': { open: ['#open-flights-modal-btn'], close: ['close-flights-modal-btn'], onOpen: populateFlightDetails },
         'family-details': { open: ['.nav-family-btn'], close: ['close-family-modal-btn'], onOpen: populateFamilyDetails },
         'gemini-chat': { open: ['.nav-gemini-btn'], close: ['close-gemini-modal-btn'] },
@@ -523,18 +532,13 @@ async function handleChecklistItemToggle(event) {
     const { category, item } = event.target.dataset;
     const isChecked = event.target.checked;
     
-    // Find the item in the local data structure and update it
     const categoryItems = currentData.packingListData[category];
     if (categoryItems) {
         const itemToUpdate = categoryItems.find(i => i.name === item);
         if (itemToUpdate) {
             itemToUpdate.checked = isChecked;
-            
-            // Update Firestore
             const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
             await updateDoc(docRef, { packingListData: currentData.packingListData });
-            
-            updatePackingProgress(); // Update progress bar locally right away
         }
     }
 }
@@ -542,22 +546,18 @@ async function handleChecklistItemToggle(event) {
 function updatePackingProgress() {
     if (!currentData.packingListData) return;
     const progressBar = document.getElementById('packingProgressBar');
+    if (!progressBar) return;
     let total = 0;
     let checked = 0;
     for (const category in currentData.packingListData) {
-        // Defensive check: ensure the category is an array before processing
         if (Array.isArray(currentData.packingListData[category])) {
             total += currentData.packingListData[category].length;
             checked += currentData.packingListData[category].filter(item => item.checked).length;
-        } else {
-            console.warn(`Data for packing category "${category}" is not an array, skipping progress calculation.`);
         }
     }
     const percentage = total > 0 ? (checked / total) * 100 : 0;
     progressBar.style.width = percentage + '%';
 }
-
-
 
 function renderLuggage() {
     const container = document.getElementById('luggage-list-container');
@@ -572,15 +572,33 @@ function renderLuggage() {
     `).join('');
 }
 
+// --- MODAL POPULATION FUNCTIONS ---
 
-// Other modal population functions
+function populateHotelDetails() {
+    if (!currentData || !currentData.hotelData) return;
+    const { hotelData } = currentData;
+    const modal = document.getElementById('hotel-booking-modal');
+    
+    modal.querySelector('.grid-cols-2.gap-4.text-sm').innerHTML = `
+        <div><strong>צ'ק-אין:</strong> ${hotelData.checkIn}</div>
+        <div><strong>צ'ק-אאוט:</strong> ${hotelData.checkOut}</div>
+        <div><strong>מספר הזמנה:</strong> ${hotelData.bookingRef}</div>
+        <div><strong>הוזמן ע"י:</strong> ${hotelData.bookedBy}</div>`;
+        
+    modal.querySelector('img').src = hotelData.imageUrl;
+    modal.querySelector('img').alt = hotelData.name;
+    modal.querySelector('.font-semibold').textContent = hotelData.name;
+    modal.querySelector('.text-sm').textContent = hotelData.address;
+    modal.querySelector('#qr-code-img').src = hotelData.qrCodeUrl;
+}
+
 function populateFlightDetails() {
     if (!currentData || !currentData.flightData) return;
     const container = document.getElementById('flight-details-content');
     const { flightData } = currentData;
     const flightSections = [
-        { title: 'טיסות הלוך - יום ראשון, 24 באוגוסט 2025', flights: flightData.outbound, connection: flightData.connections.outbound },
-        { title: 'טיסות חזור - יום שישי, 29 באוגוסט 2025', flights: flightData.inbound, connection: flightData.connections.inbound }
+        { title: `טיסות הלוך - ${flightData.outbound[0].date}`, flights: flightData.outbound, connection: flightData.connections.outbound },
+        { title: `טיסות חזור - ${flightData.inbound[0].date}`, flights: flightData.inbound, connection: flightData.connections.inbound }
     ];
 
     let html = '';
@@ -697,7 +715,6 @@ function showBoardingPasses() {
     });
 }
 
-
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -706,7 +723,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
-
 
 function findAndDisplayNearby() {
     if (!currentData || !currentData.activitiesData) return;
@@ -745,15 +761,10 @@ function findAndDisplayNearby() {
     );
 }
 
+// --- GEMINI & AI CALLS ---
 
-// --- Packing Assistant & Gemini Calls ---
-
-function setupPackingAssistant() {
-    // Logic for the packing assistant using Gemini
-}
-async function handlePackingSuggestion() {
-    // Logic to handle suggestion request
-}
+function setupPackingAssistant() { /* ... Logic for packing assistant ... */ }
+async function handlePackingSuggestion() { /* ... Logic to handle suggestion request ... */ }
 
 async function handlePlanRequest(event) {
     const button = event.target;
@@ -791,7 +802,6 @@ function showTextResponseModal(title, content) {
     modal.classList.add('flex');
 }
 
-
 async function handleWhatToWearRequest() {
     if (!currentData.weatherData) {
         showTextResponseModal("שגיאה", "נתוני מזג האוויר עדיין לא נטענו. נסה שוב בעוד רגע.");
@@ -819,20 +829,12 @@ async function handleSummaryRequest(event) {
     const geminiResponse = await callGeminiWithParts([{ text: prompt }]);
     showTextResponseModal(`✨ סיכום לילדים - ${title} ✨`, geminiResponse);
 }
-async function handleCustomPlanRequest() {
-    // ...
-}
-async function handleChatSend() {
-    // ...
-}
-function handleChatImageUpload(event) {
-    // ...
-}
-function removeChatImage() {
-    // ...
-}
+async function handleCustomPlanRequest() { /* ... */ }
+async function handleChatSend() { /* ... */ }
+function handleChatImageUpload(event) { /* ... */ }
+function removeChatImage() { /* ... */ }
 
-// --- API CALLS (already defined) ---
+// --- API CALL ---
 async function callGeminiWithParts(parts) {
     try {
         const response = await fetch('/api/gemini', {

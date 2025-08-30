@@ -11,9 +11,12 @@
 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 
@@ -24,40 +27,18 @@ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""><
 <div class="flex justify-between items-center">
 <a href="#" class="text-xl font-bold text-accent">ז'נבה עם קטנטנים 🧸</a>
 <div class="hidden lg:flex items-center space-x-6 space-x-reverse">
-<a href="#plan" class="hover:text-accent">🗺️ מסלול</a>
-<a href="#activities" class="hover:text-accent">🎈 פעילויות</a>
+<a href="#plan" class="hover:text-accent nav-link">🗺️ מסלול</a>
+<a href="#activities" class="hover:text-accent nav-link">🎈 פעילויות</a>
 <button id="open-packing-modal-btn" class="hover:text-accent flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-</svg>
+<i class="fa-solid fa-suitcase-rolling nav-icon"></i>
 מדריך אריזה
 </button>
-<button class="nav-family-btn hover:text-accent flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-</svg>
-פרטי משפחה
-</button>
-<button class="nav-nearby-btn hover:text-accent flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-</svg>
-קרוב אליי
+<button id="open-integrations-modal-btn" class="hover:text-accent flex items-center">
+    <i class="fa-solid fa-cogs nav-icon"></i>
+    כלים שימושיים
 </button>
 <button class="nav-gemini-btn hover:text-accent flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-</svg>
+<i class="fa-solid fa-robot nav-icon"></i>
 שאל מומחה
 </button>
 </div>
@@ -72,44 +53,21 @@ d="M4 6h16M4 12h16m-7 6h7"></path>
 </div>
 </div>
 <div id="mobile-menu" class="hidden lg:hidden mt-3 space-y-2">
-<a href="#plan" class="block py-2 px-4 text-sm hover:bg-gray-200 rounded-md">🗺️ מסלול</a>
-<a href="#activities" class="block py-2 px-4 text-sm hover:bg-gray-200 rounded-md">🎈 פעילויות</a>
+<a href="#plan" class="nav-link block py-2 px-4 text-sm hover:bg-gray-200 rounded-md">🗺️ מסלול</a>
+<a href="#activities" class="nav-link block py-2 px-4 text-sm hover:bg-gray-200 rounded-md">🎈 פעילויות</a>
 <button id="open-packing-modal-btn-mobile"
 class="w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-</svg>
+<i class="fa-solid fa-suitcase-rolling nav-icon"></i>
 מדריך אריזה
 </button>
-<button
-class="nav-family-btn w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-</svg>
-פרטי משפחה
-</button>
-<button
-class="nav-nearby-btn w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-</svg>
-קרוב אליי
+<button id="open-integrations-modal-btn-mobile"
+class="w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
+<i class="fa-solid fa-cogs nav-icon"></i>
+כלים שימושיים
 </button>
 <button
 class="nav-gemini-btn w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
-<svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-</svg>
+<i class="fa-solid fa-robot nav-icon"></i>
 שאל מומחה
 </button>
 </div>
@@ -124,6 +82,23 @@ d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006
 ליהנות.</p>
 </section>
 
+<!-- Photo Album Section -->
+<section id="photo-album" class="bg-white rounded-2xl p-6 shadow-lg">
+    <h2 class="section-title">🖼️ אלבום הטיול שלנו</h2>
+    <div id="carousel-container" class="relative w-full max-w-3xl mx-auto overflow-hidden rounded-lg">
+        <div id="carousel-inner" class="flex transition-transform duration-500 ease-in-out">
+            <!-- Images will be injected here -->
+        </div>
+        <button id="carousel-prev" class="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white/50 hover:bg-white/80 rounded-full p-2 text-gray-700 shadow-md z-10"><i class="fas fa-chevron-left"></i></button>
+        <button id="carousel-next" class="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white/50 hover:bg-white/80 rounded-full p-2 text-gray-700 shadow-md z-10"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div class="text-center mt-4">
+        <input type="file" id="image-upload-input" class="hidden" accept="image/*" multiple>
+        <button id="image-upload-btn" class="btn-primary px-6 py-3 rounded-lg"><i class="fas fa-camera mr-2"></i>העלה תמונות</button>
+    </div>
+</section>
+
+
 <!-- Trip Progress Bar Section -->
 <section id="trip-progress" class="bg-white rounded-2xl p-6 shadow-lg">
 <h2 class="section-title">📊 ציר הזמן של הטיול</h2>
@@ -132,6 +107,18 @@ d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006
                 <div id="progress-bar-text" class="absolute inset-0 flex items-center justify-center text-white font-bold text-sm truncate px-2"></div>
 </div>
 <div id="progress-bar-info" class="text-center mt-3 text-gray-600"></div>
+</section>
+
+<!-- Family Bulletin Board -->
+<section id="bulletin-board" class="bg-yellow-50 border-r-4 border-yellow-400 rounded-2xl p-8">
+    <h2 class="section-title">📌 לוח מודעות משפחתי</h2>
+    <div id="bulletin-messages" class="mb-4 space-y-3 max-h-60 overflow-y-auto p-4 bg-white rounded-lg shadow-inner">
+        <!-- Messages will be injected here -->
+    </div>
+    <div class="flex gap-2">
+        <input type="text" id="bulletin-input" class="flex-1 border border-gray-300 rounded-lg py-2 px-4" placeholder="כתבו הודעה לכולם...">
+        <button id="bulletin-post-btn" class="btn-primary px-6 py-2 rounded-lg">פרסם</button>
+    </div>
 </section>
 
 <section id="bookings" class="bg-secondary rounded-2xl">
@@ -267,6 +254,9 @@ class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 pb-4 max-w-5xl mx-au
 <div id="activities-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
     <p class="text-center col-span-full">טוען פעילויות...</p>
 </div>
+<div id="load-more-container" class="text-center mt-8 hidden">
+    <button id="load-more-btn" class="btn-primary px-6 py-3 rounded-lg">טען עוד פעילויות 🎈</button>
+</div>
 </section>
 
 <!-- Interactive Map Section -->
@@ -288,11 +278,8 @@ class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 pb-4 max-w-5xl mx-au
 <div id="packing-guide-modal"
 class="modal fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center p-4">
 <div class="bg-primary rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col relative">
-<button id="close-packing-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800 z-20">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800 z-20">
+<i class="fas fa-times fa-2x"></i>
 </button>
 <div class="p-6 border-b">
 <h3 class="text-2xl font-bold text-center text-accent">מדריך אריזה אסטרטגי: טיסה לשווייץ 🇭</h3>
@@ -307,129 +294,48 @@ style="width: 0%"></div>
 class="packing-nav-link font-semibold text-gray-600 hover:text-accent">רשימה מלאה</a>
 <a href="#packing-arsenal"
 class="packing-nav-link font-semibold text-gray-600 hover:text-accent">ארסנל הכבודה</a>
-<a href="#packing-vacuum-guide"
-class="packing-nav-link font-semibold text-gray-600 hover:text-accent">אריזת ואקום</a>
-<a href="#packing-plan" class="packing-nav-link font-semibold text-gray-600 hover:text-accent">תכנית
-אריזה</a>
 <a href="#packing-assistant"
 class="packing-nav-link font-semibold text-gray-600 hover:text-accent">עוזר חכם</a>
-<a href="#packing-action-plan"
-class="packing-nav-link font-semibold text-gray-600 hover:text-accent">תכנית פעולה</a>
 </nav>
 </div>
 <div id="packing-modal-content" class="flex-1 overflow-y-auto p-6">
 <div class="modal-checklist-container space-y-10">
 <section id="packing-master-list" class="scroll-mt-24">
-<h2 class="text-2xl font-bold mb-4 text-right">שלב א': רשימת הציוד המלאה (Master Checklist)
+<h2 class="text-2xl font-bold mb-4 text-right">שלב א': רשימת הציוד המלאה
 </h2>
 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
 <div id="checklist-container">
 <!-- Checklist items will be rendered here by JavaScript -->
 </div>
+<div class="border-t pt-4">
+    <h4 class="text-lg font-semibold mb-2">הוסף פריט לרשימה</h4>
+    <div class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="new-item-input" placeholder="שם הפריט" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
+        <select id="new-item-category-select" class="border-gray-300 rounded-md shadow-sm p-2">
+            <!-- Options will be added dynamically -->
+        </select>
+        <button id="add-item-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
+    </div>
+</div>
+<div class="border-t pt-4">
+    <h4 class="text-lg font-semibold mb-2">עדכון חכם לפי נושא</h4>
+    <div class="flex gap-2">
+        <input type="text" id="theme-input" placeholder="לדוגמה: יום טיול בהרים" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
+        <button id="update-list-by-theme-btn" class="btn-primary px-4 py-2 rounded-md">עדכן עם Gemini</button>
+    </div>
+</div>
 </div>
 </section>
 <section id="packing-arsenal" class="scroll-mt-24">
-<h2 class="text-2xl font-bold text-right mb-4">שלב ב': ארסנל הכבודה (אופציה מינימליסטית)</h2>
+<h2 class="text-2xl font-bold text-right mb-4">שלב ב': ארסנל הכבודה</h2>
 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
 <div id="luggage-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <!-- Luggage items will be rendered here -->
 </div>
 </div>
 </section>
-<section id="packing-vacuum-guide" class="scroll-mt-24">
-<h2 class="text-2xl font-bold text-right mb-4">שלב ג': מדריך לאריזה חכמה עם שקיות ואקום</h2>
-<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-1</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold mb-1">מיינו לפי סוג וגודל</h4>
-<p class="text-gray-600">קבצו בגדים דומים יחד (חולצות, מכנסיים, פליזים) והתאימו אותם
-לגודל השקית המתאימה.</p>
-</div>
-</div>
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-2</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold mb-1">גלגלו, אל תקפלו</h4>
-<p class="text-gray-600">גלגול הדוק של כל פריט מוציא אוויר ראשוני, מונע קמטים וחוסך
-המון מקום בתוך השקית.</p>
-</div>
-</div>
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-3</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold mb-1">סדרו בשכבות שטוחות</h4>
-<p class="text-gray-600">הניחו את הבגדים המגולגלים בצורה מסודרת ושטוחה בתוך השקית.
-אל תמלאו יתר על המידה - השאירו כמה ס"מ מהסגירה.</p>
-</div>
-</div>
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-4</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold mb-1">שאבו את האוויר</h4>
-<p class="text-gray-600">סגרו היטב את פס הסגירה הכפול, חברו את המשאבה (או שואב אבק)
-לשסתום ושאבו עד שהשקית הופכת לקשיחה ושטוחה.</p>
-</div>
-</div>
-</div>
-</section>
-<section id="packing-plan" class="scroll-mt-24">
-<h2 class="text-2xl font-bold text-right mb-4">שלב ד': תכנית האריזה – מה נכנס לאן?</h2>
-<div class="space-y-4">
-<div class="bg-white rounded-lg shadow-md border border-gray-200">
-<button
-class="accordion-button w-full text-right p-4 flex justify-between items-center">
-<span class="text-lg font-semibold flex-grow">🧳 מזוודה גדולה: שימוש בשקיות ואקום</span>
-<span class="accordion-arrow transition-transform duration-300">▼</span>
-</button>
-<div class="accordion-content px-4 pb-4">
-<ul class="list-disc pr-5 mt-2 space-y-2 text-gray-700">
-<li><strong>שקית 80x100 (הענקית):</strong> מעילים (3), פליזים/סווטשירטים (6).
-</li>
-<li><strong>שקית 60x80 (ביגוד מבוגרים):</strong> חולצות (10), מכנסיים (4), הלבשה
-תחתונה וגרביים (8 סטים).</li>
-<li><strong>שקית 60x80 (ביגוד ילדים):</strong> כל בגדי הילדים (מלבד 2 סטים
-להחלפה), פיג'מות (4).</li>
-<li><strong>שקית 50x70 (אביזרים):</strong> כובעים, צעיפים, כפפות (סט לכל אחד).
-</li>
-<li><strong>שקית 50x70 (ספייר):</strong> ריקה, לשימוש עם כביסה מלוכלכת בדרך
-חזרה.</li>
-<li><strong>לצד השקיות (לא בואקום):</strong> נעליים נוספות (3 זוגות), תיק רחצה
-משפחתי, חבילת חיתולים ומגבונים סגורה.</li>
-</ul>
-</div>
-</div>
-<div class="bg-white rounded-lg shadow-md border border-gray-200">
-<button
-class="accordion-button w-full text-right p-4 flex justify-between items-center">
-<span class="text-lg font-semibold flex-grow">🎒 תיק גב גדול ("תיק ההישרדות")</span>
-<span class="accordion-arrow transition-transform duration-300">▼</span>
-</button>
-<div class="accordion-content px-4 pb-4">
-<ul class="list-disc pr-5 mt-2 space-y-2 text-gray-700">
-<li>כל המסמכים והכסף</li>
-<li>תרופות ותיק עזרה ראשונה</li>
-<li>סט בגדים להחלפה לכל אחד (4 סטים)</li>
-<li>ציוד חיוני ל-24 שעות לילדים: חיתולים (10), מגבונים (חבילה פתוחה), תמ"ל,
-חטיפים.</li>
-<li>מטענים ניידים וכבלים</li>
-<li>שקית "הפתעות" קטנה לטיסה</li>
-<li>בקבוקי מים ריקים</li>
-</ul>
-</div>
-</div>
-</div>
-</section>
 <section id="packing-assistant" class="scroll-mt-24">
-<h2 class="text-2xl font-bold text-right mb-4">שלב ה': עוזר אריזה חכם 🤖</h2>
+<h2 class="text-2xl font-bold text-right mb-4">שלב ג': עוזר אריזה חכם 🤖</h2>
 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center">
 <p class="mb-4">רוצים עזרה אישית? צלמו את המזוודה שלכם ואת ערימת הבגדים, והעוזר החכם יבנה
 לכם תכנית אריזה אופטימלית.</p>
@@ -442,12 +348,7 @@ class="accordion-button w-full text-right p-4 flex justify-between items-center"
 class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
 <img id="suitcase-preview" class="hidden max-h-full max-w-full rounded-md">
 <div id="suitcase-placeholder">
-<svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
-viewBox="0 0 48 48" aria-hidden="true">
-<path
-d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8"
-stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-</svg>
+<i class="fas fa-suitcase text-4xl text-gray-400"></i>
 <button id="upload-suitcase-btn"
 class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">1. העלה תמונת
 מזוודה</button>
@@ -457,12 +358,7 @@ class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">1. העלה תמונת
 class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
 <img id="items-preview" class="hidden max-h-full max-w-full rounded-md">
 <div id="items-placeholder">
-<svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
-viewBox="0 0 48 48" aria-hidden="true">
-<path
-d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8"
-stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-</svg>
+<i class="fas fa-tshirt text-4xl text-gray-400"></i>
 <button id="upload-items-btn"
 class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">2. העלה תמונת
 ציוד</button>
@@ -474,58 +370,7 @@ class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">2. העלה תמונת
 disabled>✨ קבלו הצעת אריזה חכמה ✨</button>
 
 <div id="packing-suggestion-result" class="mt-4 text-right"></div>
-</div>
-</section>
-<section id="packing-action-plan" class="scroll-mt-24">
-<h2 class="text-2xl font-bold text-right mb-4">שלב ו': תכנית פעולה לקונקשן עצמי באתונה</h2>
-<div class="bg-white p-6 rounded-lg shadow-md border border-red-200">
-<h3 class="text-xl font-semibold text-red-800 mb-4">אתגר: קונקשן של שעה ו-55 דקות - מסגרת
-זמנים צפופה מאוד!</h3>
-<p class="mb-6">הזמן הכולל הנדרש למעבר באתונה (איסוף כבודה, צ'ק-אין מחדש, בידוק) הוא בין
-שעתיים לשעתיים וחצי. זמן הקונקשן שלכם קצר מהנדרש ומציב אתכם בסיכון גבוה לפספס את טיסת
-ההמשך. יש לפעול ביעילות מקסימלית.</p>
-<div class="space-y-4">
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-1</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold text-blue-800 mb-1">צ'ק-אין אונליין מראש</h4>
-<p class="text-gray-600">בצעו צ'ק-אין לטיסת Blue Bird Airways ברגע שהאפשרות
-נפתחת.</p>
-</div>
-</div>
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-2</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold text-blue-800 mb-1">"חלק ומשול" בנחיתה</h4>
-<p class="text-gray-600">הורה 1 רץ קדימה למסוע הכבודה. הורה 2 מתקדם עם הילדים.
-הכניסו ילד למנשא מיד לשחרור הידיים.</p>
-</div>
-</div>
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-3</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold text-blue-800 mb-1">איסוף וצ'ק-אין מחדש</h4>
-<p class="text-gray-600">אספו את כל המזוודות והעגלה, העמיסו על עגלת שדה תעופה
-ונווטו במהירות לדלפקי הצ'ק-אין של טיסת ההמשך.</p>
-</div>
-</div>
-<div class="flex items-start gap-x-4">
-<div
-class="flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-4</div>
-<div class="flex-1">
-<h4 class="text-lg font-semibold text-blue-800 mb-1">בקשו עזרה</h4>
-<p class="text-gray-600">פנו לדיילי הקרקע, הראו את כרטיס הטיסה והסבירו על
-הקונקשן הקצר. ייתכן שיאפשרו לכם לעקוף תורים.</p>
-</div>
-</div>
-</div>
+<button id="download-suggestion-btn" class="hidden mt-2 btn-primary text-sm py-1 px-3 rounded-md">הורד הצעה</button>
 </div>
 </section>
 </div>
@@ -536,11 +381,8 @@ class="flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-
 <div id="gemini-chat-modal"
 class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-lg h-full max-h-[80vh] flex flex-col p-4 relative">
-<button id="close-gemini-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 class="text-2xl font-bold mb-4 text-center text-accent">שאל מומחה מקומי 🤖</h3>
 <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
@@ -557,20 +399,12 @@ class="text-red-500 text-xs mx-auto block mt-1 hover:underline">הסר תמונ�
 <div class="mt-4 flex items-center">
 <input type="file" id="chat-image-input" class="hidden" accept="image/*">
 <button id="chat-attach-btn" class="text-gray-500 p-2 rounded-full hover:bg-gray-200">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-</svg>
+<i class="fas fa-paperclip"></i>
 </button>
 <input type="text" id="chat-input" class="flex-1 border border-gray-300 rounded-full py-2 px-4 mx-2"
 placeholder="כתוב את שאלתך כאן...">
 <button id="chat-send-btn" class="btn-primary rounded-full p-3">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-</svg>
+    <i class="fas fa-paper-plane"></i>
 </button>
 </div>
 </div>
@@ -579,20 +413,11 @@ d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
 <div id="story-modal"
 class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 relative">
-<button id="close-story-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 class="text-2xl font-bold mb-4 text-center text-purple-600">סיפור לפני השינה 🌙</h3>
 <div id="story-modal-content" class="flex-1 overflow-y-auto p-4 leading-relaxed">
-</div>
-<div class="border-t pt-4 mt-4 text-center">
-<button id="read-story-aloud-btn" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-400" disabled>
-🔊 הקריאו לי את הסיפור
-</button>
-<audio id="story-audio-player" class="hidden"></audio>
 </div>
 </div>
 </div>
@@ -600,11 +425,8 @@ stroke="currentColor">
 <div id="nearby-modal"
 class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-full overflow-y-auto p-6 relative">
-<button id="close-nearby-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 class="text-2xl font-bold mb-4 text-accent">מקומות קרובים אליך</h3>
 <div id="nearby-results" class="space-y-4"></div>
@@ -614,11 +436,8 @@ stroke="currentColor">
 <div id="hotel-booking-modal"
 class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-full overflow-y-auto p-6 relative">
-<button id="close-hotel-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 class="text-2xl font-bold mb-4 text-gray-800">השהות שלכם בז'נבה</h3>
 <div class="border rounded-lg p-4 mb-6">
@@ -655,11 +474,8 @@ alt="QR Code for Accor App" class="mx-auto rounded-md">
 <div id="flights-details-modal"
 class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-full overflow-y-auto p-6 relative">
-<button id="close-flights-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 class="text-2xl font-bold mb-4 text-gray-800">פירוט טיסות מלא</h3>
 <div class="space-y-6" id="flight-details-content">
@@ -673,11 +489,8 @@ stroke="currentColor">
 <div id="family-details-modal"
 class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-full overflow-y-auto p-6 relative">
-<button id="close-family-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 class="text-2xl font-bold mb-4 text-gray-800">פרטי דרכונים</h3>
 <div id="family-details-content" class="space-y-2">
@@ -688,11 +501,8 @@ stroke="currentColor">
 <div id="text-response-modal"
 class="modal fixed inset-0 bg-black bg-opacity-50 z-[101] hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col p-4 relative">
-<button id="close-text-response-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 id="text-response-modal-title" class="text-2xl font-bold mb-4 text-center text-accent">תשובת המומחה</h3>
 <div id="text-response-modal-content" class="flex-1 overflow-y-auto p-2">
@@ -703,17 +513,72 @@ stroke="currentColor">
 <div id="boarding-pass-modal"
 class="modal fixed inset-0 bg-black bg-opacity-60 z-[102] hidden items-center justify-center p-4">
 <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col p-4 relative">
-<button id="close-boarding-pass-modal-btn" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-</svg>
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
 </button>
 <h3 class="text-2xl font-bold mb-4 text-center text-accent">כרטיסי עלייה למטוס</h3>
 <div id="boarding-pass-content" class="flex-1 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
 <!-- Boarding passes will be injected here -->
 </div>
 </div>
+</div>
+
+<!-- Integrations Modal -->
+<div id="integrations-modal" class="modal fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center p-4">
+    <div class="bg-primary rounded-lg shadow-xl w-full max-w-2xl h-full max-h-[90vh] flex flex-col relative">
+        <button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800 z-20"><i class="fas fa-times fa-2x"></i></button>
+        <div class="p-6 border-b">
+            <h3 class="text-2xl font-bold text-center text-accent">כלים שימושיים ושיתוף</h3>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+            <!-- Expense Tracker -->
+            <section id="expense-tracker">
+                <h2 class="text-2xl font-bold mb-4 text-right">💸 מעקב הוצאות</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                        <input type="text" id="expense-desc" placeholder="תיאור ההוצאה" class="flex-1 border p-2 rounded-md">
+                        <input type="number" id="expense-amount" placeholder="סכום (CHF)" class="w-32 border p-2 rounded-md">
+                        <select id="expense-category" class="border p-2 rounded-md">
+                            <option>אוכל ושתיה</option>
+                            <option>תחבורה</option>
+                            <option>פעילויות</option>
+                            <option>קניות</option>
+                            <option>אחר</option>
+                        </select>
+                        <button id="add-expense-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
+                    </div>
+                    <div id="expense-list" class="max-h-60 overflow-y-auto"></div>
+                    <div class="text-right font-bold text-xl mt-4 border-t pt-2">
+                        <span>סה"כ הוצאות: </span>
+                        <span id="expense-total">0.00 CHF</span>
+                    </div>
+                </div>
+            </section>
+            <!-- Integrations -->
+            <section id="other-integrations">
+                <h2 class="text-2xl font-bold mb-4 text-right">🔗 אינטגרציות</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <button id="share-whatsapp-btn" class="bg-green-500 text-white p-4 rounded-lg shadow-md hover:bg-green-600">
+                        <i class="fab fa-whatsapp fa-2x mb-2"></i><br>שתף ב-WhatsApp
+                    </button>
+                    <button id="add-to-calendar-btn" class="bg-blue-500 text-white p-4 rounded-lg shadow-md hover:bg-blue-600">
+                        <i class="fas fa-calendar-alt fa-2x mb-2"></i><br>הוסף ליומן Google
+                    </button>
+                    <div class="bg-gray-200 p-4 rounded-lg shadow-md">
+                        <h4 class="font-bold mb-2">ממיר מטבעות</h4>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="currency-chf" class="w-full p-1 border rounded" placeholder="CHF">
+                            <span>🇨🇭</span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="number" id="currency-ils" class="w-full p-1 border rounded" placeholder="ILS" readonly>
+                            <span>🇮🇱</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 </div>
 
 <script src="script.js" type="module"></script>

@@ -1,14 +1,18 @@
 {
-  "name": "geneva-travel-guide",
+  "name": "geneva-guide-project",
   "version": "1.0.0",
-  "description": "Interactive travel guide with Netlify Functions for Gemini API",
-  "main": "index.html",
+  "description": "Interactive family guide to Geneva, deployed on Netlify.",
+  "main": "script.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "netlify dev"
   },
-  "author": "",
+  "author": "Dor Lipetz",
   "license": "ISC",
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "@google/generative-ai": "^0.2.1"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.15.0"
   }
 }
+

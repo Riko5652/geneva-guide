@@ -1,2 +1,20 @@
-[functions]
-  directory = "netlify/functions/"
+# This is the main build command for your site.
+[build]
+  # This should point to the directory where your site's files are.
+  # Usually it's the root or a "public" or "dist" directory.
+  # For your simple setup, the root is likely correct.
+  publish = "/"
+  # This tells Netlify where your serverless functions are.
+  functions = "netlify/functions"
+
+# This section is the MOST IMPORTANT for fixing the 404 error.
+# It creates a user-friendly and secure API endpoint.
+[[redirects]]
+  # Any request to a URL starting with "/api/"...
+  from = "/api/*"
+  # ...will be invisibly forwarded to the correct serverless function.
+  to = "/.netlify/functions/:splat"
+  # The status 200 means this is not a traditional "redirect", 
+  # but more of a "rewrite" or "proxy". It's what you want for an API.
+  status = 200
+

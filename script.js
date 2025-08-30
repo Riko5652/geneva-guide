@@ -6,116 +6,107 @@ import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstat
 
 // Global State
 let db, auth, storage, userId, unsubscribeChat;
-let currentData = {
-    activitiesData: [],
-    flightData: {},
-    familyData: [],
-    packingListData: [],
-    luggageData: [],
-    dailySpecials: {},
-    itineraryData: [],
-    packingAssistant: {}
-};
+let currentData = null; // Initialize as null
 let map = null;
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    initFirebase();
-    fetchAndRenderWeather();
-    setupEventListeners();
-    updateProgressBar();
-    setInterval(updateProgressBar, 60000);
+    initApp();
 });
 
-async function initFirebase() {
+async function initApp() {
     try {
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // Fetch the configuration from our secure serverless function
+        const response = await fetch('/.netlify/functions/get-config');
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(`Failed to fetch Firebase config: ${err.error}`);
+        }
+        const firebaseConfig = await response.json();
+
+        // Now initialize Firebase with the fetched config
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
         storage = getStorage(app);
 
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                userId = user.uid;
-                loadAndRenderAllData();
-                loadChatHistory(userId);
-            } else {
-                signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
-            }
-        });
+        // All other initializations are now chained after successful connection
+        initializeAppLogic();
+
     } catch (error) {
-        console.error("Firebase initialization failed:", error);
+        console.error("Critical Initialization Failed:", error);
+        document.body.innerHTML = `<div style="padding: 2rem; text-align: center;"><h1>Application Error</h1><p>Could not initialize Firebase. Please ensure environment variables are set correctly in Netlify and redeploy.</p><p><i>${error.message}</i></p></div>`;
     }
 }
 
-// --- DATA LOADING & RENDERING ---
+function initializeAppLogic() {
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            userId = user.uid;
+            // Load all data from Firestore and then render the UI
+            loadAndRenderAllData();
+            loadChatHistory(userId);
+        } else {
+            signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
+        }
+    });
 
+    // These setups can happen once the page loads, as they don't depend on data initially
+    setupEventListeners();
+    fetchAndRenderWeather();
+    setInterval(updateProgressBar, 60000);
+}
+
+
+// --- DATA LOADING & RENDERING ---
 function loadAndRenderAllData() {
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const appId = "lipetztrip-guide"; // This should match the app_id from your seed script
     const publicDataRef = doc(db, `artifacts/${appId}/public/genevaGuide`);
 
     onSnapshot(publicDataRef, (docSnap) => {
         if (docSnap.exists()) {
-            currentData = { ...currentData, ...docSnap.data() };
+            currentData = docSnap.data();
+            // This function is now called only when data is available
             renderAllComponents();
         } else {
-            console.log("No guide data found in Firestore.");
+            console.error("Guide data document not found in Firestore. Did you run the seed script?");
+            document.getElementById('itinerary-container').innerText = 'Data not found.';
+            document.getElementById('activities-grid').innerText = 'Data not found.';
         }
     }, (error) => console.error("Error fetching guide data:", error));
 }
 
 function renderAllComponents() {
+    if (!currentData) return;
     renderActivities();
-    renderItinerary();
-    renderChecklist();
-    renderLuggage();
-    displayDailyAttraction();
-    populateFlightDetails();
-    populateFamilyDetails();
-    renderPackingAssistant();
+    //... call all other render functions here
+    updateProgressBar(); // Initial call with correct dates
     initMap();
 }
 
-// ... (Add all individual render functions here: renderActivities, renderItinerary, etc.)
-// Example:
-function renderActivities() {
-    const grid = document.getElementById('activities-grid');
-    // ... logic to filter and render currentData.activitiesData
+// ... Rest of your functions (renderActivities, handleChatSend, updateProgressBar, etc.) remain here
+// Make sure to add checks for `if (!currentData) return;` at the top of functions that rely on it.
+
+async function fetchAndRenderWeather() {
+    // This function is now safe to call
+    // ... same weather fetching logic
 }
 
-// ... other render functions
-
-// --- FIRESTORE UPDATE FUNCTIONS ---
-
-async function updatePackingListItem(itemId, isChecked) {
-    const updatedList = currentData.packingListData.map(item =>
-        item.id === itemId ? { ...item, checked: isChecked } : item
-    );
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const publicDataRef = doc(db, `artifacts/${appId}/public/genevaGuide`);
-    await updateDoc(publicDataRef, { packingListData: updatedList });
+function updateProgressBar() {
+    // This function needs flight data, so ensure it's available
+    if (!currentData || !currentData.flightData) return;
+    // ... same progress bar logic
 }
 
-async function updatePackingAssistant(suggestionText, suitcaseImageURL, itemsImageURL) {
-     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const publicDataRef = doc(db, `artifacts/${appId}/public/genevaGuide`);
-    await updateDoc(publicDataRef, {
-        packingAssistant: {
-            suggestionText,
-            suitcaseImageURL,
-            itemsImageURL
-        }
-    });
+function initMap() {
+    if (map || !currentData || !currentData.activitiesData) return;
+    // ... same map initialization logic
 }
 
-// --- EVENT HANDLERS & LOGIC ---
 
-// ... (Add all event handlers like handleChatSend, handlePackingSuggestion, etc.)
-// Example:
-async function handlePackingSuggestion() {
-    // ... logic to get images, call Gemini, and then call updatePackingAssistant
-}
+// ... include all your other functions ...
+
+// Make sure to define setupEventListeners, handleChatSend, etc.
 
 // --- API CALLS ---
 async function callGeminiWithParts(parts) {

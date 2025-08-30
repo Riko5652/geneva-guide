@@ -134,23 +134,24 @@
             <div id="progress-bar-info" class="text-center mt-3 text-gray-600"></div>
         </section>
 
-        <!-- NEW: Photo Gallery Section -->
+        <!-- UPDATED: Photo Gallery Section -->
         <section id="photo-gallery" class="bg-secondary rounded-2xl">
             <h2 class="section-title">🖼️ אלבום הטיול שלכם</h2>
-            <p class="section-subtitle">הדביקו קישור לאלבום שיתופי מ-Google Photos כדי לראות את כל הזכרונות שלכם כאן.</p>
-            <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2 mb-6">
-                <input type="url" id="photos-link-input" class="flex-1 border border-gray-300 rounded-lg py-3 px-4" placeholder="הדבק כאן קישור לאלבום מ-Google Photos...">
-                <button id="load-photos-btn" class="btn-primary px-6 py-3 rounded-lg">טען תמונות</button>
+            <div class="max-w-3xl mx-auto text-center text-sm mb-4 bg-blue-50 text-blue-800 p-3 rounded-lg">
+                <strong>הוראות:</strong> כדי להטמיע את אלבום התמונות, צרו מצגת ב-Google Slides, לחצו על "קובץ" > "שתף" > "פרסם באינטרנט", העתיקו את **כל** קוד ההטמעה (`<iframe>...</iframe>`) והדביקו אותו כאן.
             </div>
-            <div id="photos-grid-container" class="max-w-5xl mx-auto">
-                <div id="photos-grid-placeholder" class="text-center text-gray-500 py-12">
-                    <p>התמונות מהטיול יופיעו כאן...</p>
-                </div>
-                 <div id="photos-grid" class="hidden grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <!-- Photos will be injected here by JavaScript -->
-                </div>
+            <div class="max-w-3xl mx-auto flex flex-col sm:flex-row gap-2 mb-6">
+                <input type="text" id="photos-embed-input" class="flex-1 border border-gray-300 rounded-lg py-3 px-4" placeholder="הדבק כאן את קוד ההטמעה מ-Google Slides...">
+                <button id="load-photos-btn" class="btn-primary px-6 py-3 rounded-lg">הטען ושמור אלבום</button>
+            </div>
+            <div id="photos-container" class="max-w-5xl mx-auto">
+                 <div id="photos-placeholder" class="aspect-video bg-gray-200 rounded-lg flex items-center justify-center p-4">
+                    <p class="text-gray-500 text-center">האלבום שלכם יוצג כאן לאחר הדבקת קוד ההטמעה.</p>
+                 </div>
+                 <!-- Iframe and button will be injected here -->
             </div>
         </section>
+
 
         <!-- Time Sensitive Actions Section -->
         <section id="current-actions" class="hidden bg-yellow-50 border-r-4 border-yellow-400 rounded-2xl">
@@ -926,8 +927,30 @@
         </div>
     </div>
 
+    <!-- NEW: Photos Fullscreen Modal -->
+    <div id="photos-fullscreen-modal" class="modal fixed inset-0 bg-black bg-opacity-75 z-[103] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full h-full flex flex-col relative">
+            <button id="close-photos-fullscreen-modal-btn" class="modal-close-btn text-white bg-black/50 rounded-full p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="photos-fullscreen-content" class="w-full h-full">
+                <!-- Iframe for fullscreen view will be injected here -->
+            </div>
+        </div>
+    </div>
 
-    <script src="script.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        // Make firebase objects globally available
+        window.firebase = { initializeApp, getFirestore };
+    </script>
+    <script src="script.js" type="module"></script>
 </body>
 
 </html>
+

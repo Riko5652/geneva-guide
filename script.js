@@ -530,6 +530,9 @@ function setupEventListeners() {
         if (e.target.closest('.swap-activity-btn')) handleSwapActivity(e.target.closest('.swap-activity-btn'));
         if (e.target.id === 'show-boarding-passes-btn') showBoardingPasses();
         if (e.target.closest('.modal-close-btn')) e.target.closest('.modal').classList.add('hidden');
+        if (e.target.id === 'get-packing-suggestion-btn') handlePackingSuggestion();
+        if (e.target.id === 'upload-suitcase-btn') document.getElementById('suitcase-image-input').click();
+        if (e.target.id === 'upload-items-btn') document.getElementById('items-image-input').click();
     });
 
     document.getElementById('image-upload-input')?.addEventListener('change', handleImageUpload);
@@ -811,6 +814,7 @@ function renderLuggage() {
             <div>
                 <h4 class="font-bold text-lg">${item.name}</h4>
                 <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
+                ${item.size ? `<p class="text-sm"><strong>גודל:</strong> ${item.size}</p>` : ''}
             </div>
             <button class="remove-luggage-btn text-red-400 hover:text-red-600" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
         </div>`).join('');
@@ -823,14 +827,17 @@ function renderLuggage() {
 async function handleAddLuggage() {
     const nameInput = document.getElementById('new-luggage-name');
     const ownerInput = document.getElementById('new-luggage-owner');
+    const sizeInput = document.getElementById('new-luggage-size');
     const name = nameInput.value.trim();
     const owner = ownerInput.value.trim();
+    const size = sizeInput.value.trim();
     if (!name || !owner) return;
-    const newLuggage = { name, owner };
+    const newLuggage = { name, owner, size };
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
     await updateDoc(docRef, { luggageData: arrayUnion(newLuggage) });
     nameInput.value = '';
     ownerInput.value = '';
+    sizeInput.value = '';
 }
 
 async function handleRemoveLuggage(event) {
@@ -1053,11 +1060,11 @@ async function handleRecalculatePackingPlan() {
     
     Please provide the response in Hebrew, formatted clearly with Markdown, indicating which items go into which bag. For example:
     
-    ### מזוודה גדולה
+    ### מזוודה גדולה (גדולה)
     - ביגוד (מבוגרים)
     - ביגוד (ילדים)
     
-    ### תיק עלייה למטוס
+    ### תיק עלייה למטוס (קטן)
     - מסמכים וכסף
     - אלקטרוניקה
     `;
@@ -1068,6 +1075,23 @@ async function handleRecalculatePackingPlan() {
     } catch (error) {
         console.error("Error recalculating packing plan:", error);
         resultContainer.innerHTML = '<p class="text-red-500">שגיאה ביצירת תכנית האריזה. נסה שוב.</p>';
+    }
+}
+
+async function handlePackingSuggestion() { 
+    // This is the image-based packing assistant
+    const resultContainer = document.getElementById('packing-suggestion-result');
+    resultContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
+    // In a real scenario, you would get the base64 strings of the uploaded images here
+    // For this example, we'll simulate the call with a text prompt
+    const prompt = `You are a visual packing expert. A user has provided an image of their suitcase and an image of the items they want to pack. Analyze the images and provide a step-by-step guide in HEBREW on how to best fit the items into the suitcase, maximizing space. (Simulated response - image analysis not implemented).`;
+
+    try {
+        const responseText = await callGeminiWithParts([{ text: prompt }]);
+        resultContainer.innerHTML = responseText.replace(/\n/g, '<br>');
+    } catch (error) {
+        console.error("Error getting packing suggestion:", error);
+        resultContainer.innerHTML = '<p class="text-red-500">שגיאה בקבלת הצעת אריזה. נסה שוב.</p>';
     }
 }
 
@@ -1137,6 +1161,7 @@ async function handleCustomPlanRequest() { /* ... */ }
 async function handleChatSend() { /* ... */ }
 function handleChatImageUpload(event) { /* ... */ }
 function removeChatImage() { /* ... */ }
+function handleDownloadSuggestion() { /* ... */ }
 
 async function handleSwapActivity(button) {
     const { dayIndex, planType, itemIndex } = button.dataset;
@@ -1200,6 +1225,7 @@ async function callGeminiWithParts(parts) {
             throw new Error(`API error: ${response.status} ${errorText}`);
         }
         const result = await response.json();
+        // **FIX:** Safely access the text part of the response
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
             return text;
@@ -1212,3 +1238,4 @@ async function callGeminiWithParts(parts) {
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
 }
+

@@ -354,10 +354,19 @@ function getWeatherInfo(code) {
 
 
 function initMap() {
-    if (map || !document.getElementById('map') || !L || !currentData.activitiesData) return;
+    if (map) { // If map already exists, just update markers
+        map.eachLayer(layer => {
+            if (!!layer.toGeoJSON) map.removeLayer(layer);
+        });
+    } else { // If map doesn't exist, create it
+        if (!document.getElementById('map') || !L) return;
+        map = L.map('map');
+    }
+
+    if (!currentData.activitiesData) return;
     
     const hotelLocation = { lat: 46.2183, lon: 6.0744, name: "Mercure Hotel Meyrin" };
-    map = L.map('map').setView([hotelLocation.lat, hotelLocation.lon], 12);
+    map.setView([hotelLocation.lat, hotelLocation.lon], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const hotelIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
@@ -371,6 +380,7 @@ function initMap() {
         }
     });
 }
+
 
 function updateProgressBar() {
     if (!currentData || !currentData.tripTimeline) return;
@@ -1137,7 +1147,45 @@ async function handleChatSend() { /* ... */ }
 function handleChatImageUpload(event) { /* ... */ }
 function removeChatImage() { /* ... */ }
 function handleDownloadSuggestion() { /* ... */ }
-function handleSwapActivity(button) { /* ... */ }
+async function handleSwapActivity(button) {
+    const { dayIndex, planType, itemIndex } = button.dataset;
+
+    const day = currentData.itineraryData.find(d => d.dayIndex == dayIndex);
+    if (!day || !day[planType]) return;
+
+    const currentItem = day[planType].items[itemIndex];
+    
+    // Find all activities already planned for this day to avoid duplicates
+    let plannedActivityIds = [];
+    currentData.itineraryData[dayIndex - 1].mainPlan.items.forEach(i => plannedActivityIds.push(i.activityId));
+    if (currentData.itineraryData[dayIndex - 1].alternativePlan) {
+        currentData.itineraryData[dayIndex - 1].alternativePlan.items.forEach(i => plannedActivityIds.push(i.activityId));
+    }
+    if (currentData.itineraryData[dayIndex - 1].alternativePlan2) {
+        currentData.itineraryData[dayIndex - 1].alternativePlan2.items.forEach(i => plannedActivityIds.push(i.activityId));
+    }
+
+    // Find a new random activity that isn't already planned
+    const availableActivities = currentData.activitiesData.filter(a => !plannedActivityIds.includes(a.id) && a.category !== 'בית מרקחת');
+    
+    if (availableActivities.length === 0) {
+        alert("לא נמצאו פעילויות חלופיות פנויות!");
+        return;
+    }
+    
+    const newActivity = availableActivities[Math.floor(Math.random() * availableActivities.length)];
+    
+    // Update the local data structure
+    const updatedItinerary = JSON.parse(JSON.stringify(currentData.itineraryData)); // Deep copy
+    updatedItinerary[dayIndex - 1][planType].items[itemIndex] = {
+        activityId: newActivity.id,
+        description: newActivity.description
+    };
+
+    // Update Firestore
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    await updateDoc(docRef, { itineraryData: updatedItinerary });
+}
 
 
 // --- API CALL ---

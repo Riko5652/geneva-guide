@@ -275,106 +275,120 @@ class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 pb-4 max-w-5xl mx-au
 </footer>
 
 <!-- Modals -->
-<div id="packing-guide-modal" class="modal fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center p-4">
-    <div class="bg-primary rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col relative">
-        <button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800 z-20">
-            <i class="fas fa-times fa-2x"></i>
-        </button>
-        <div class="p-6 border-b">
-            <h3 class="text-2xl font-bold text-center text-accent">מדריך אריזה אסטרטגי: טיסה לשווייץ 🇨🇭</h3>
+<div id="packing-guide-modal"
+class="modal fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center p-4">
+<div class="bg-primary rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800 z-20">
+<i class="fas fa-times fa-2x"></i>
+</button>
+<div class="p-6 border-b">
+<h3 class="text-2xl font-bold text-center text-accent">מדריך אריזה אסטרטגי: טיסה לשווייץ 🇨🇭</h3>
+</div>
+<div class="sticky top-0 bg-primary/90 backdrop-blur-sm z-10 p-4 border-b">
+<div class="w-full bg-gray-200 rounded-full h-4 mb-4 shadow-inner">
+<div id="packingProgressBar" class="bg-green-500 h-4 rounded-full progress-bar-fill"
+style="width: 0%"></div>
+</div>
+<nav class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm sm:text-base">
+<a href="#packing-master-list"
+class="packing-nav-link font-semibold text-gray-600 hover:text-accent">רשימה מלאה</a>
+<a href="#luggage-management-section"
+class="packing-nav-link font-semibold text-gray-600 hover:text-accent">ניהול כבודה</a>
+<a href="#packing-assistant"
+class="packing-nav-link font-semibold text-gray-600 hover:text-accent">עוזר חכם</a>
+</nav>
+</div>
+<div id="packing-modal-content" class="flex-1 overflow-y-auto p-6">
+<div class="modal-checklist-container space-y-10">
+<section id="packing-master-list" class="scroll-mt-24">
+<h2 class="text-2xl font-bold mb-4 text-right">שלב א': רשימת הציוד המלאה
+</h2>
+<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
+<div id="checklist-container">
+<!-- Checklist items will be rendered here by JavaScript -->
+</div>
+<div class="border-t pt-4">
+    <h4 class="text-lg font-semibold mb-2">הוסף פריט לרשימה</h4>
+    <div class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="new-item-input" placeholder="שם הפריט" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
+        <select id="new-item-category-select" class="border-gray-300 rounded-md shadow-sm p-2">
+            <!-- Options will be added dynamically -->
+        </select>
+        <button id="add-item-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
+    </div>
+</div>
+<div class="border-t pt-4">
+    <h4 class="text-lg font-semibold mb-2">עדכון חכם לפי נושא</h4>
+    <div class="flex gap-2">
+        <input type="text" id="theme-input" placeholder="לדוגמה: יום טיול בהרים" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
+        <button id="update-list-by-theme-btn" class="btn-primary px-4 py-2 rounded-md">עדכן עם Gemini</button>
+    </div>
+</div>
+</div>
+</section>
+<section id="luggage-management-section" class="scroll-mt-24">
+    <h2 class="text-2xl font-bold text-right mb-4">שלב ב': ארסנל הכבודה</h2>
+    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div id="luggage-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            <!-- Luggage items will be rendered here -->
         </div>
-        <div class="sticky top-0 bg-primary/90 backdrop-blur-sm z-10 p-4 border-b">
-            <div class="w-full bg-gray-200 rounded-full h-4 mb-4 shadow-inner">
-                <div id="packingProgressBar" class="bg-green-500 h-4 rounded-full progress-bar-fill" style="width: 0%"></div>
+        <div class="border-t pt-4">
+             <h4 class="text-lg font-semibold mb-2">הוסף מזוודה/תיק</h4>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="new-luggage-name" placeholder="שם (למשל, מזוודה גדולה)" class="flex-1 border-gray-300 rounded-md p-2">
+                <input type="text" id="new-luggage-owner" placeholder="אחראי" class="w-1/3 border-gray-300 rounded-md p-2">
+                 <input type="text" id="new-luggage-size" placeholder="גודל (למשל, 8 קג)" class="w-1/3 border-gray-300 rounded-md p-2">
+                <button id="add-luggage-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
             </div>
-            <nav class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm sm:text-base">
-                <a href="#packing-master-list" class="packing-nav-link font-semibold text-gray-600 hover:text-accent">רשימה מלאה</a>
-                <a href="#luggage-management-section" class="packing-nav-link font-semibold text-gray-600 hover:text-accent">ניהול כבודה</a>
-                <a href="#packing-assistant" class="packing-nav-link font-semibold text-gray-600 hover:text-accent">עוזר חכם</a>
-            </nav>
         </div>
-        <div id="packing-modal-content" class="flex-1 overflow-y-auto p-6">
-            <div class="modal-checklist-container space-y-10">
-                <section id="packing-master-list" class="scroll-mt-24">
-                    <h2 class="text-2xl font-bold mb-4 text-right">שלב א': רשימת הציוד המלאה</h2>
-                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
-                        <div id="checklist-container">
-                            <!-- Checklist items will be rendered here by JavaScript -->
-                        </div>
-                        <div class="border-t pt-4">
-                            <h4 class="text-lg font-semibold mb-2">הוסף פריט לרשימה</h4>
-                            <div class="flex flex-col sm:flex-row gap-2">
-                                <input type="text" id="new-item-input" placeholder="שם הפריט" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
-                                <select id="new-item-category-select" class="border-gray-300 rounded-md shadow-sm p-2">
-                                    <!-- Options will be added dynamically -->
-                                </select>
-                                <button id="add-item-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
-                            </div>
-                        </div>
-                        <div class="border-t pt-4">
-                            <h4 class="text-lg font-semibold mb-2">עדכון חכם לפי נושא</h4>
-                            <div class="flex gap-2">
-                                <input type="text" id="theme-input" placeholder="לדוגמה: יום טיול בהרים" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
-                                <button id="update-list-by-theme-btn" class="btn-primary px-4 py-2 rounded-md">עדכן עם Gemini</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <section id="luggage-management-section" class="scroll-mt-24">
-                    <h2 class="text-2xl font-bold text-right mb-4">שלב ב': ארסנל הכבודה</h2>
-                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                        <div id="luggage-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                            <!-- Luggage items will be rendered here -->
-                        </div>
-                        <div class="border-t pt-4">
-                             <h4 class="text-lg font-semibold mb-2">הוסף מזוודה/תיק</h4>
-                            <div class="flex flex-col sm:flex-row gap-2">
-                                <input type="text" id="new-luggage-name" placeholder="שם (למשל, מזוודה גדולה)" class="flex-1 border-gray-300 rounded-md p-2">
-                                <input type="text" id="new-luggage-owner" placeholder="אחראי" class="w-1/3 border-gray-300 rounded-md p-2">
-                                <input type="text" id="new-luggage-size" placeholder="גודל (למשל, 8 קג)" class="w-1/3 border-gray-300 rounded-md p-2">
-                                <button id="add-luggage-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
-                            </div>
-                        </div>
-                        <div class="border-t pt-6 mt-6">
-                            <h4 class="text-lg font-bold mb-2">חישוב תכנית אריזה</h4>
-                             <p class="mb-4 text-sm text-gray-600">בהתבסס על רשימת הפריטים וארסנל הכבודה שלכם, העוזר החכם יבנה לכם תכנית אריזה אופטימלית.</p>
-                            <button id="recalculate-packing-plan-btn" class="w-full btn-primary py-2 px-4 rounded-lg">✨ חשב מחדש תכנית אריזה ✨</button>
-                        </div>
-                    </div>
-                </section>
-                <section id="packing-assistant" class="scroll-mt-24">
-                    <h2 class="text-2xl font-bold text-right mb-4">שלב ג': עוזר אריזה חזותי 🤖</h2>
-                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center">
-                        <p class="mb-4">רוצים עזרה אישית? צלמו את המזוודה שלכם ואת ערימת הציוד, והעוזר החכם יבנה לכם תכנית אריזה אופטימלית.</p>
-
-                        <input type="file" id="suitcase-image-input" class="hidden" accept="image/*">
-                        <input type="file" id="items-image-input" class="hidden" accept="image/*">
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div id="suitcase-preview-container" class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
-                                <img id="suitcase-preview" class="hidden max-h-full max-w-full rounded-md">
-                                <div id="suitcase-placeholder">
-                                    <i class="fas fa-suitcase text-4xl text-gray-400"></i>
-                                    <button id="upload-suitcase-btn" class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">1. העלה תמונת מזוודה</button>
-                                </div>
-                            </div>
-                            <div id="items-preview-container" class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
-                                <img id="items-preview" class="hidden max-h-full max-w-full rounded-md">
-                                <div id="items-placeholder">
-                                    <i class="fas fa-tshirt text-4xl text-gray-400"></i>
-                                    <button id="upload-items-btn" class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">2. העלה תמונת ציוד</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button id="get-packing-suggestion-btn" class="w-full btn-primary py-2 px-4 rounded-lg" disabled>✨ קבלו הצעת אריזה חכמה ✨</button>
-
-                        <div id="packing-suggestion-result" class="mt-4 text-right"></div>
-                    </div>
-                </section>
-            </div>
+        <div class="border-t pt-6 mt-6">
+            <h4 class="text-lg font-bold mb-2">חישוב תכנית אריזה</h4>
+             <p class="mb-4 text-sm text-gray-600">בהתבסס על רשימת הפריטים וארסנל הכבודה שלכם, העוזר החכם יבנה לכם תכנית אריזה אופטימלית.</p>
+            <button id="recalculate-packing-plan-btn" class="w-full btn-primary py-2 px-4 rounded-lg">✨ חשב מחדש תכנית אריזה ✨</button>
         </div>
     </div>
+</section>
+<section id="packing-assistant" class="scroll-mt-24">
+<h2 class="text-2xl font-bold text-right mb-4">שלב ג': עוזר אריזה חזותי 🤖</h2>
+<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center">
+<p class="mb-4">רוצים עזרה אישית? צלמו את המזוודה שלכם ואת ערימת הציוד, והעוזר החכם יבנה
+לכם תכנית אריזה אופטימלית.</p>
+
+<input type="file" id="suitcase-image-input" class="hidden" accept="image/*">
+<input type="file" id="items-image-input" class="hidden" accept="image/*">
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+<div id="suitcase-preview-container"
+class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
+<img id="suitcase-preview" class="hidden max-h-full max-w-full rounded-md">
+<div id="suitcase-placeholder">
+<i class="fas fa-suitcase text-4xl text-gray-400"></i>
+<button id="upload-suitcase-btn"
+class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">1. העלה תמונת
+מזוודה</button>
+</div>
+</div>
+<div id="items-preview-container"
+class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
+<img id="items-preview" class="hidden max-h-full max-w-full rounded-md">
+<div id="items-placeholder">
+<i class="fas fa-tshirt text-4xl text-gray-400"></i>
+<button id="upload-items-btn"
+class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">2. העלה תמונת
+ציוד</button>
+</div>
+</div>
+</div>
+
+<button id="get-packing-suggestion-btn" class="w-full btn-primary py-2 px-4 rounded-lg"
+disabled>✨ קבלו הצעת אריזה חכמה ✨</button>
+
+<div id="packing-suggestion-result" class="mt-4 text-right"></div>
+</div>
+</section>
+</div>
+</div>
+</div>
 </div>
 
 <div id="gemini-chat-modal"
@@ -603,4 +617,3 @@ class="modal fixed inset-0 bg-black bg-opacity-60 z-[102] hidden items-center ju
 <script src="script.js" type="module"></script>
 </body>
 </html>
-

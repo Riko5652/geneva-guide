@@ -55,6 +55,12 @@ function loadAndRenderAllData() {
     onSnapshot(publicDataRef, (docSnap) => {
         if (docSnap.exists()) {
             currentData = docSnap.data();
+            // Load locally stored activities and merge them
+            const localActivities = JSON.parse(localStorage.getItem('geminiActivities') || '[]');
+            const allActivityIds = new Set(currentData.activitiesData.map(a => a.id));
+            const uniqueLocalActivities = localActivities.filter(localActivity => !allActivityIds.has(localActivity.id));
+            currentData.activitiesData.push(...uniqueLocalActivities);
+            
             renderAllComponents();
         } else {
             console.error("Guide data not found. Run seed script.");
@@ -205,7 +211,7 @@ function renderExpenses() {
         total += Number(exp.amount);
         expenseList.innerHTML += `
             <div class="flex justify-between items-center p-2 border-b">
-                <span>${exp.desc} <span class="text-xs text-gray-500">(${exp.category})</span></span>
+                <span>${exp.desc} <span class="text-xs text-gray-500"></span></span>
                 <span>${exp.amount} CHF</span>
             </div>
         `;
@@ -730,11 +736,15 @@ async function handleFindMoreWithGemini() {
         const newActivities = JSON.parse(responseText);
         if (!Array.isArray(newActivities)) throw new Error("Gemini did not return a valid array.");
         
-        const updatedActivities = [...currentData.activitiesData, ...newActivities];
-        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-        await updateDoc(docRef, { activitiesData: updatedActivities });
-        
-        displayedActivitiesCount = updatedActivities.length;
+        // Add to local state and local storage
+        currentData.activitiesData.push(...newActivities);
+        const localActivities = JSON.parse(localStorage.getItem('geminiActivities') || '[]');
+        localActivities.push(...newActivities);
+        localStorage.setItem('geminiActivities', JSON.stringify(localActivities));
+
+        displayedActivitiesCount = currentData.activitiesData.length;
+        renderActivities(); // Re-render with the new data
+        initMap(); // Update map with new locations
 
     } catch (error) {
         console.error("Error finding more activities with Gemini:", error, responseText);
@@ -758,17 +768,38 @@ function handleCarousel(direction) {
 }
 
 async function handleImageUpload(event) {
+    /**
+     * ==================================================================================
+     * חשוב: כדי שהעלאת תמונות תעבוד, יש להגדיר חוקי אבטחה ב-Firebase Storage.
+     * 1. פתח את מסוף Firebase של הפרויקט שלך.
+     * 2. נווט אל Storage -> Rules.
+     * 3. החלף את התוכן הקיים בחוקים הבאים ולחץ על "Publish":
+     * * rules_version = '2';
+     * service firebase.storage {
+     * match /b/{bucket}/o {
+     * match /{allPaths=**} {
+     * allow read, write: if true; // In a real app, secure this with: if request.auth != null;
+     * }
+     * }
+     * }
+     * ==================================================================================
+     */
     const files = event.target.files;
     if (!files.length) return;
     alert(`מעלה ${files.length} תמונות...`);
     for (const file of files) {
         const timestamp = Date.now();
         const storageRef = ref(storage, `trip-photos/${timestamp}-${file.name}`);
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        const newPhoto = { url: downloadURL, uploadedAt: timestamp };
-        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-        await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
+        try {
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+            const newPhoto = { url: downloadURL, uploadedAt: timestamp };
+            const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+            await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
+        } catch(e) {
+            console.error("Upload failed", e);
+            alert("העלאת התמונה נכשלה. אנא בדוק את חוקי האבטחה של Firebase Storage ואת הגדרות ה-CORS.");
+        }
     }
     alert("התמונות הועלו בהצלחה!");
 }
@@ -814,7 +845,7 @@ function renderLuggage() {
             <div>
                 <h4 class="font-bold text-lg">${item.name}</h4>
                 <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
-                ${item.size ? `<p class="text-sm"><strong>גודל:</strong> ${item.size}</p>` : ''}
+                 ${item.size ? `<p class="text-sm"><strong>גודל:</strong> ${item.size}</p>` : ''}
             </div>
             <button class="remove-luggage-btn text-red-400 hover:text-red-600" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
         </div>`).join('');
@@ -1053,7 +1084,7 @@ async function handleRecalculatePackingPlan() {
     const packingList = JSON.stringify(currentData.packingListData);
     const luggageList = JSON.stringify(currentData.luggageData);
     
-    const prompt = `You are an expert packing assistant. Based on the following packing list of items and the available luggage, create an optimal packing plan for a family. Assign each category of items to the most suitable bag. 
+    const prompt = `You are an expert packing assistant. Based on the following packing list of items and the available luggage (including their sizes), create an optimal packing plan for a family. Assign each category of items to the most suitable bag. 
     
     Item List (JSON): ${packingList}
     Available Luggage (JSON): ${luggageList}
@@ -1162,7 +1193,6 @@ async function handleChatSend() { /* ... */ }
 function handleChatImageUpload(event) { /* ... */ }
 function removeChatImage() { /* ... */ }
 function handleDownloadSuggestion() { /* ... */ }
-
 async function handleSwapActivity(button) {
     const { dayIndex, planType, itemIndex } = button.dataset;
 
@@ -1225,7 +1255,6 @@ async function callGeminiWithParts(parts) {
             throw new Error(`API error: ${response.status} ${errorText}`);
         }
         const result = await response.json();
-        // **FIX:** Safely access the text part of the response
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
             return text;
@@ -1238,4 +1267,3 @@ async function callGeminiWithParts(parts) {
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
 }
-

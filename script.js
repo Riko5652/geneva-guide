@@ -55,11 +55,14 @@ function loadAndRenderAllData() {
     onSnapshot(publicDataRef, (docSnap) => {
         if (docSnap.exists()) {
             currentData = docSnap.data();
-            // Load locally stored activities and merge them
-            const localActivities = JSON.parse(localStorage.getItem('geminiActivities') || '[]');
-            const allActivityIds = new Set(currentData.activitiesData.map(a => a.id));
-            const uniqueLocalActivities = localActivities.filter(localActivity => !allActivityIds.has(localActivity.id));
-            currentData.activitiesData.push(...uniqueLocalActivities);
+
+            // **CHANGE**: Load AI-generated activities from localStorage for the current session
+            const storedAiActivities = JSON.parse(localStorage.getItem('ai_added_activities'));
+            if (storedAiActivities && Array.isArray(storedAiActivities)) {
+                const existingIds = new Set(currentData.activitiesData.map(a => a.id));
+                const uniqueNewActivities = storedAiActivities.filter(a => !existingIds.has(a.id));
+                currentData.activitiesData.push(...uniqueNewActivities);
+            }
             
             renderAllComponents();
         } else {
@@ -211,7 +214,7 @@ function renderExpenses() {
         total += Number(exp.amount);
         expenseList.innerHTML += `
             <div class="flex justify-between items-center p-2 border-b">
-                <span>${exp.desc} <span class="text-xs text-gray-500"></span></span>
+                <span>${exp.desc} <span class="text-xs text-gray-500">(${exp.category})</span></span>
                 <span>${exp.amount} CHF</span>
             </div>
         `;
@@ -310,25 +313,6 @@ async function fetchAndRenderWeather() {
     }
 }
 
-function formatTravelTime(minutes) {
-    if (isNaN(minutes) || minutes === null) return 'לא ידוע';
-    if (minutes < 60) {
-        return `כ-${minutes} דקות`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    let timeString = '';
-    if (hours === 1) {
-        timeString = 'שעה';
-    } else {
-        timeString = `${hours} שעות`;
-    }
-    if (remainingMinutes > 0) {
-        timeString += ` ו-${remainingMinutes} דקות`;
-    }
-    return timeString;
-}
-
 function createActivityCard(activity) {
     const whatToBringList = activity.whatToBring ? `
        <div class="border-t pt-4 mt-4">
@@ -338,13 +322,13 @@ function createActivityCard(activity) {
            </ul>
        </div>` : '';
 
+    // **CHANGE**: Ensure image URL is handled gracefully, even if empty string from AI
+    const imageUrl = activity.image || `https://placehold.co/600x400/e2e8f0/94a3b8?text=${encodeURIComponent(activity.name)}`;
+
     return `
        <div class="card activity-card" data-category="${activity.category}" data-time="${activity.time}">
            <div class="image-container">
-               <img src="${activity.image}" alt="${activity.name}" class="w-full h-48 object-cover" onerror="this.closest('.card').classList.add('no-image');">
-           </div>
-           <div class="image-fallback">
-               <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+               <img src="${imageUrl}" alt="${activity.name}" class="w-full h-48 object-cover" onerror="this.src='https://placehold.co/600x400/e2e8f0/94a3b8?text=Image+not+found';">
            </div>
            <div class="p-6 flex flex-col flex-grow">
                <div class="flex-grow">
@@ -352,7 +336,7 @@ function createActivityCard(activity) {
                    <span class="text-sm font-semibold text-accent py-1 px-2 rounded-full bg-teal-50 mb-3 inline-block">${activity.category}</span>
                    <p class="text-gray-600 mb-4 text-sm">${activity.description}</p>
                    <div class="border-t pt-4 mt-4 space-y-3 text-sm">
-                       <div class="flex items-start"><span class="w-6 text-center mt-1">🕒</span><p><strong>זמן הגעה:</strong> ${formatTravelTime(activity.time)}</p></div>
+                       <div class="flex items-start"><span class="w-6 text-center mt-1">🕒</span><p><strong>זמן הגעה:</strong> כ-${activity.time || 'לא ידוע'} דקות</p></div>
                        <div class="flex items-start"><span class="w-6 text-center mt-1">🚆</span><p><strong>דרך הגעה:</strong> ${activity.transport || 'לא ידוע'}</p></div>
                        <div class="flex items-start"><span class="w-6 text-center mt-1">💰</span><p><strong>עלות:</strong> ${activity.cost}</p></div>
                        <div class="flex items-start"><span class="w-6 text-center mt-1">📍</span><p><strong>כתובת:</strong> ${activity.address}</p></div>
@@ -384,18 +368,15 @@ function getWeatherInfo(code) {
 
 function initMap() {
     if (map) { 
-        map.invalidateSize();
+        map.eachLayer(layer => {
+            if (!!layer.toGeoJSON) map.removeLayer(layer);
+        });
     } else { 
         if (!document.getElementById('map') || !L) return;
         map = L.map('map');
     }
 
     if (!currentData.activitiesData) return;
-    
-    // Clear existing layers before adding new ones
-    map.eachLayer(layer => {
-        if (!!layer.toGeoJSON) map.removeLayer(layer);
-    });
     
     const hotelLocation = { lat: 46.2183, lon: 6.0744, name: "Mercure Hotel Meyrin" };
     map.setView([hotelLocation.lat, hotelLocation.lon], 12);
@@ -408,7 +389,7 @@ function initMap() {
 
     currentData.activitiesData.forEach(activity => {
         if (activity.lat && activity.lon) {
-            L.marker([activity.lat, activity.lon], { icon: activityIcon }).addTo(map).bindTooltip(`<b>${activity.name}</b><br>${formatTravelTime(activity.time)} נסיעה מהמלון`);
+            L.marker([activity.lat, activity.lon], { icon: activityIcon }).addTo(map).bindTooltip(`<b>${activity.name}</b><br>כ-${activity.time || '?'} דקות נסיעה מהמלון`);
         }
     });
 }
@@ -465,7 +446,7 @@ function createActivitySnippetHTML(activity, dayIndex) {
     return `
        <div class="activity-snippet text-sm text-gray-600 space-y-2">
            <div class="flex items-start"><span class="w-5 text-center">⏰</span><p>${hours}</p></div>
-           <div class="flex items-start"><span class="w-5 text-center">🕒</span><p>${formatTravelTime(activity.time)}</p></div>
+           <div class="flex items-start"><span class="w-5 text-center">🕒</span><p>כ-${activity.time || 'לא ידוע'} דקות</p></div>
            <div class="flex items-start"><span class="w-5 text-center">💰</span><p>${activity.cost}</p></div>
            <div class="flex items-start"><span class="w-5 text-center">📍</span><p>${activity.address}</p></div>
            <a href="https://www.google.com/maps/dir/?api=1&destination=${activity.lat},${activity.lon}" target="_blank" class="inline-block text-accent font-semibold hover:underline">פתח ניווט</a>
@@ -514,31 +495,56 @@ function setupEventListeners() {
     });
 
     document.body.addEventListener('click', (e) => {
-        if (e.target.closest('#open-packing-modal-btn, #open-packing-modal-btn-mobile')) openModal('packing-guide-modal', setupPackingGuideModal);
-        if (e.target.closest('#open-integrations-modal-btn, #open-integrations-modal-btn-mobile')) openModal('integrations-modal');
-        if (e.target.closest('.nav-gemini-btn')) openModal('gemini-chat-modal');
-        if (e.target.closest('#open-flights-modal-btn')) openModal('flights-details-modal', populateFlightDetails);
-        if (e.target.closest('#open-hotel-modal-btn')) openModal('hotel-booking-modal', populateHotelDetails);
-        if (e.target.closest('.nav-family-btn')) openModal('family-details-modal', populateFamilyDetails);
-        if (e.target.closest('#find-nearby-btn')) openModal('nearby-modal', findAndDisplayNearby);
+        if (e.target.closest('#open-packing-modal-btn, #open-packing-modal-btn-mobile')) {
+            openModal('packing-guide-modal', setupPackingGuideModal);
+        }
+        if (e.target.closest('#open-integrations-modal-btn, #open-integrations-modal-btn-mobile')) {
+            openModal('integrations-modal');
+        }
+        if (e.target.closest('.nav-gemini-btn')) {
+            openModal('gemini-chat-modal');
+        }
+         if (e.target.closest('#open-flights-modal-btn')) {
+            openModal('flights-details-modal', populateFlightDetails);
+        }
+         if (e.target.closest('#open-hotel-modal-btn')) {
+            openModal('hotel-booking-modal', populateHotelDetails);
+        }
+        if (e.target.closest('.nav-family-btn')) {
+            openModal('family-details-modal', populateFamilyDetails);
+        }
+         if (e.target.closest('#find-nearby-btn')) {
+            openModal('nearby-modal', findAndDisplayNearby);
+        }
+        
         if (e.target.id === 'load-more-btn') handleLoadMore();
         if (e.target.id === 'image-upload-btn') document.getElementById('image-upload-input').click();
         if (e.target.id === 'bulletin-post-btn') handlePostBulletinMessage();
         if (e.target.id === 'add-expense-btn') handleAddExpense();
         if (e.target.id === 'add-item-btn') handleAddPackingItem();
         if (e.target.id === 'update-list-by-theme-btn') handleUpdateListByTheme();
-        if (e.target.id === 'recalculate-packing-plan-btn') handleRecalculatePackingPlan();
+        if (e.target.id === 'get-packing-suggestion-btn') handlePackingSuggestion();
+        if (e.target.id === 'download-suggestion-btn') handleDownloadSuggestion();
         if (e.target.id === 'share-whatsapp-btn') handleShareWhatsApp();
         if (e.target.id === 'add-to-calendar-btn') handleAddToCalendar();
         if (e.target.id === 'add-luggage-btn') handleAddLuggage();
+        if (e.target.id === 'recalculate-packing-plan-btn') handleRecalculatePackingPlan();
         if (e.target.closest('#carousel-next')) handleCarousel('next');
         if (e.target.closest('#carousel-prev')) handleCarousel('prev');
         if (e.target.closest('.swap-activity-btn')) handleSwapActivity(e.target.closest('.swap-activity-btn'));
         if (e.target.id === 'show-boarding-passes-btn') showBoardingPasses();
-        if (e.target.closest('.modal-close-btn')) e.target.closest('.modal').classList.add('hidden');
-        if (e.target.id === 'get-packing-suggestion-btn') handlePackingSuggestion();
-        if (e.target.id === 'upload-suitcase-btn') document.getElementById('suitcase-image-input').click();
-        if (e.target.id === 'upload-items-btn') document.getElementById('items-image-input').click();
+        if (e.target.closest('.modal-close-btn')) {
+            e.target.closest('.modal').classList.add('hidden');
+            e.target.closest('.modal').classList.remove('flex');
+        }
+        // **CHANGE**: Listener for visual packing guide upload button
+        if (e.target.closest('.upload-item-image-btn')) {
+            e.target.closest('.visual-packing-item').querySelector('.item-image-input').click();
+        }
+        // **CHANGE**: Listener for visual packing item removal
+        if (e.target.closest('.remove-item-btn')) {
+             handleRemovePackingItem(e.target.closest('.remove-item-btn'));
+        }
     });
 
     document.getElementById('image-upload-input')?.addEventListener('change', handleImageUpload);
@@ -564,6 +570,16 @@ function setupEventListeners() {
         });
     });
 
+    // **CHANGE**: Delegated listener for visual packing image inputs
+    document.getElementById('packing-guide-modal')?.addEventListener('change', e => {
+        if (e.target.classList.contains('item-image-input')) {
+            handlePackingItemImageUpload(e);
+        }
+        if (e.target.classList.contains('packing-item-checkbox')) {
+            handleChecklistItemToggle(e);
+        }
+    });
+
     document.body.dataset.listenersAttached = 'true';
 }
 
@@ -579,49 +595,116 @@ function openModal(modalId, onOpenCallback) {
 
 function setupPackingGuideModal() {
     if (!currentData) return;
-    renderChecklist();
-    renderLuggage();
+    renderPackingGuide();
+    renderLuggageManagement();
+    
     const categorySelect = document.getElementById('new-item-category-select');
     categorySelect.innerHTML = Object.keys(currentData.packingListData).map(cat => `<option value="${cat}">${cat}</option>`).join('');
+
+    const modal = document.getElementById('packing-guide-modal');
+    modal.querySelectorAll('.accordion-button').forEach(button => {
+        if (!button.dataset.listenerAttached) {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                button.classList.toggle('open');
+                content.style.maxHeight = content.style.maxHeight ? null : `${content.scrollHeight}px`;
+            });
+            button.dataset.listenerAttached = 'true';
+        }
+    });
+    
     updatePackingProgress();
 }
 
-function renderChecklist() {
+// **CHANGE**: Renamed and rebuilt function for the visual guide
+function renderPackingGuide() {
     const container = document.getElementById('checklist-container');
     if (!container || !currentData.packingListData) return;
-    container.innerHTML = Object.entries(currentData.packingListData).map(([category, items]) => `
-        <div class="mb-4">
-            <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
-            <div class="space-y-2">
-                ${items.map(item => `
-                    <label class="flex items-center justify-between">
-                        <span>
-                            <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-name="${item.name}">
-                            <span class="mr-3 text-gray-700">${item.name}</span>
-                        </span>
-                        <button class="remove-item-btn text-red-400 hover:text-red-600" data-category="${category}" data-name="${item.name}"><i class="fas fa-trash-alt"></i></button>
-                    </label>
-                `).join('')}
-            </div>
-        </div>
-    `).join('');
+    container.innerHTML = ''; // Clear previous content
+    for (const category in currentData.packingListData) {
+        if (Array.isArray(currentData.packingListData[category])) {
+            const categorySection = document.createElement('div');
+            categorySection.className = 'mb-6';
+            categorySection.innerHTML = `<h4 class="font-bold text-lg mb-3 text-accent border-b pb-2">${category}</h4>`;
 
-    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.addEventListener('change', handleChecklistItemToggle));
-    container.querySelectorAll('.remove-item-btn').forEach(button => button.addEventListener('click', handleRemovePackingItem));
+            const itemsGrid = document.createElement('div');
+            itemsGrid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4';
+            
+            itemsGrid.innerHTML = currentData.packingListData[category].map(item => `
+                <div class="visual-packing-item text-center">
+                    <div class="relative w-full aspect-square bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden mb-2 group">
+                        <img src="${item.imageUrl || 'https://placehold.co/150x150/e2e8f0/94a3b8?text=תמונה'}" alt="${item.name}" class="w-full h-full object-cover">
+                        <button class="upload-item-image-btn absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity" data-category="${category}" data-name="${item.name}">
+                            <i class="fas fa-camera fa-2x"></i>
+                        </button>
+                        <input type="file" accept="image/*" class="item-image-input hidden" data-category="${category}" data-name="${item.name}">
+                    </div>
+                    <div class="flex items-center justify-center">
+                        <label class="flex-grow flex items-center justify-center cursor-pointer">
+                            <input type="checkbox" class="packing-item-checkbox form-checkbox h-4 w-4 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-name="${item.name}">
+                            <span class="mr-2 text-sm text-gray-700">${item.name}</span>
+                        </label>
+                        <button class="remove-item-btn text-red-400 hover:text-red-600 text-xs" data-category="${category}" data-name="${item.name}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            categorySection.appendChild(itemsGrid);
+            container.appendChild(categorySection);
+        }
+    }
 }
+
+// **CHANGE**: New function to handle image upload for a packing item
+async function handlePackingItemImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file || !userId) return;
+
+    const { category, name } = event.target.dataset;
+    // Simple visual feedback - can be improved with a proper loader
+    alert(`מעלה תמונה עבור ${name}...`);
+
+    try {
+        const storageRef = ref(storage, `packing-item-images/${userId}/${Date.now()}-${file.name}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+
+        const categoryItems = [...currentData.packingListData[category]];
+        const itemIndex = categoryItems.findIndex(i => i.name === name);
+
+        if (itemIndex > -1) {
+            categoryItems[itemIndex].imageUrl = downloadURL;
+            const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+            await updateDoc(docRef, {
+                [`packingListData.${category}`]: categoryItems
+            });
+            // onSnapshot will handle the re-render
+        }
+    } catch (error) {
+        console.error("Error uploading packing item image:", error);
+        alert("העלאת התמונה נכשלה.");
+    }
+}
+
 
 async function handleChecklistItemToggle(event) {
     const { category, name } = event.target.dataset;
     const isChecked = event.target.checked;
     
-    const categoryItems = currentData.packingListData[category].map(item => 
-        item.name === name ? { ...item, checked: isChecked } : item
-    );
-
-    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    await updateDoc(docRef, { [`packingListData.${category}`]: categoryItems });
+    const categoryItems = [...currentData.packingListData[category]];
+    const itemIndex = categoryItems.findIndex(i => i.name === name);
+    
+    if (itemIndex > -1) {
+        categoryItems[itemIndex].checked = isChecked;
+        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+        await updateDoc(docRef, { [`packingListData.${category}`]: categoryItems });
+        updatePackingProgress(); // Update progress bar immediately
+    }
 }
 
+// **CHANGE**: Updated to support new data structure
 async function handleAddPackingItem() {
     const input = document.getElementById('new-item-input');
     const categorySelect = document.getElementById('new-item-category-select');
@@ -629,21 +712,32 @@ async function handleAddPackingItem() {
     const category = categorySelect.value;
 
     if (!newItemName || !category) return;
-    const newItem = { name: newItemName, checked: false };
+
+    // New item structure with imageUrl
+    const newItem = { name: newItemName, checked: false, imageUrl: null };
+    
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    await updateDoc(docRef, { [`packingListData.${category}`]: arrayUnion(newItem) });
+    await updateDoc(docRef, {
+        [`packingListData.${category}`]: arrayUnion(newItem)
+    });
+
     input.value = '';
 }
 
-async function handleRemovePackingItem(event) {
-    const { category, name } = event.currentTarget.dataset;
-    const itemToRemoveUnchecked = { name, checked: false };
-    const itemToRemoveChecked = { name, checked: true };
+// **CHANGE**: Re-implemented for robustness with the new visual data structure
+async function handleRemovePackingItem(button) {
+    const { category, name } = button.dataset;
+    if (confirm(`האם למחוק את הפריט "${name}"?`)) {
+        const currentItems = currentData.packingListData[category] || [];
+        const newItems = currentItems.filter(item => item.name !== name);
 
-    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    await updateDoc(docRef, { [`packingListData.${category}`]: arrayRemove(itemToRemoveUnchecked) });
-    await updateDoc(docRef, { [`packingListData.${category}`]: arrayRemove(itemToRemoveChecked) });
+        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+        await updateDoc(docRef, {
+            [`packingListData.${category}`]: newItems
+        });
+    }
 }
+
 
 async function handleUpdateListByTheme() {
     const input = document.getElementById('theme-input');
@@ -653,22 +747,27 @@ async function handleUpdateListByTheme() {
     showTextResponseModal("עדכון רשימה חכם", '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>');
     
     const existingList = JSON.stringify(currentData.packingListData);
-    const prompt = `Based on the following existing packing list (JSON format), suggest additional items for a family with toddlers for a trip to Geneva, focusing on the theme: "${theme}". Provide ONLY a JSON object as a response, where keys are categories and values are arrays of item names (strings). Do not include items already on the list.
-    Existing List: ${existingList}
+    const prompt = `Based on the following existing packing list (JSON format), please suggest a list of additional items to pack for a family with toddlers for a trip to Geneva, focusing on the theme: "${theme}". Please provide ONLY a JSON object as a response, where keys are categories and values are arrays of item names (strings). Do not include items that are already on the list.
+    
+    Existing List:
+    ${existingList}
+
     Format your response strictly as a JSON object, like this: {"Category Name": ["item1", "item2"]}.`;
 
     try {
-        let responseText = await callGeminiWithParts([{ text: prompt }]);
-        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const newItems = JSON.parse(responseText);
+        const responseText = await callGeminiWithParts([{ text: prompt }]);
+        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const newItems = JSON.parse(jsonString);
 
         let updatedPackingList = { ...currentData.packingListData };
 
         for (const category in newItems) {
-            if (!updatedPackingList[category]) updatedPackingList[category] = [];
+            if (!updatedPackingList[category]) {
+                updatedPackingList[category] = [];
+            }
             newItems[category].forEach(itemName => {
                 if (!updatedPackingList[category].some(item => item.name === itemName)) {
-                    updatedPackingList[category].push({ name: itemName, checked: false });
+                    updatedPackingList[category].push({ name: itemName, checked: false, imageUrl: null }); // **CHANGE**: Add with new structure
                 }
             });
         }
@@ -685,16 +784,22 @@ async function handleUpdateListByTheme() {
     }
 }
 
+
 function updatePackingProgress() {
     if (!currentData.packingListData) return;
     const progressBar = document.getElementById('packingProgressBar');
     if (!progressBar) return;
-    let total = 0, checked = 0;
-    Object.values(currentData.packingListData).forEach(arr => {
-        total += arr.length;
-        checked += arr.filter(item => item.checked).length;
-    });
-    progressBar.style.width = (total > 0 ? (checked / total) * 100 : 0) + '%';
+    let total = 0;
+    let checked = 0;
+    for (const category in currentData.packingListData) {
+        if (Array.isArray(currentData.packingListData[category])) {
+            total += currentData.packingListData[category].length;
+            checked += currentData.packingListData[category].filter(item => item.checked).length;
+        }
+    }
+    const percentage = total > 0 ? (checked / total) * 100 : 0;
+    progressBar.style.width = percentage + '%';
+    document.getElementById('packingProgressText').textContent = `${checked}/${total} פריטים נארזו`;
 }
 
 function handleLoadMore() {
@@ -702,7 +807,14 @@ function handleLoadMore() {
     const filteredActivities = currentData.activitiesData.filter(activity => {
         if (activity.category === 'בית מרקחת') return false;
         const categoryMatch = currentCategoryFilter === 'all' || activity.category === currentCategoryFilter;
-        let timeMatch = currentTimeFilter === 'all' || (currentTimeFilter === '20' && activity.time <= 20) || (currentTimeFilter === '40' && activity.time > 20 && activity.time <= 40) || (currentTimeFilter === '60' && activity.time > 40);
+        let timeMatch = false;
+        if (currentTimeFilter === 'all') { timeMatch = true; }
+        else {
+            const time = parseInt(currentTimeFilter);
+            if (time === 20) timeMatch = activity.time <= 20;
+            else if (time === 40) timeMatch = activity.time > 20 && activity.time <= 40;
+            else if (time === 60) timeMatch = activity.time > 40;
+        }
         return categoryMatch && timeMatch;
     });
 
@@ -716,90 +828,91 @@ function handleLoadMore() {
     }
 }
 
+// **CHANGE**: Updated to save to localStorage and use a better prompt
 async function handleFindMoreWithGemini() {
-    const prompt = `Please suggest 3 more fun activities for a family with toddlers in or very near Geneva, Switzerland. They should be similar to the types of activities already on this list, but not duplicates. Provide ONLY a JSON array of objects in your response, with no other text. Each object must have these exact keys: "id", "name", "category", "time", "transport", "address", "description", "image", "link", "lat", "lon", "cost", "whatToBring", "openingHours".
+    const prompt = `Please suggest 3 more fun activities for a family with toddlers in or very near Geneva, Switzerland. They should be similar to the types of activities already on this list, but not duplicates. Provide ONLY a JSON array of objects in your response, with no other text. Each object must have these exact keys: "id", "name", "category", "time", "transport", "address", "description", "image", "link", "lat", "lon", "cost". 
+    For the "image", provide a URL for a real, relevant, and royalty-free image (e.g., from Unsplash, Pexels). If a real image URL is not available, return an empty string "". 
+    Ensure "time" is a number representing travel duration in minutes.
+    Ensure "id" is a unique random number above 1000.
     
-    IMPORTANT RULES:
-    1.  All textual fields ("name", "category", "transport", "address", "description", "cost", "whatToBring" items) MUST be in HEBREW.
-    2.  For the "image" key, try to find a real, publicly accessible image URL. If you cannot find one, use a descriptive Unsplash URL like 'https://source.unsplash.com/400x300/?geneva,park'.
-    3.  "id" should be a new unique number, higher than any existing id. The highest current ID is ${Math.max(...currentData.activitiesData.map(a => a.id))}.
-    4.  "whatToBring" must be an array of strings in HEBREW.
-    5.  "openingHours" must be an object.
-
     Existing activities to avoid duplicating:
     ${JSON.stringify(currentData.activitiesData.map(a => a.name))}
     `;
 
     try {
-        let responseText = await callGeminiWithParts([{ text: prompt }]);
-        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const newActivities = JSON.parse(responseText);
-        if (!Array.isArray(newActivities)) throw new Error("Gemini did not return a valid array.");
-        
-        // Add to local state and local storage
-        currentData.activitiesData.push(...newActivities);
-        const localActivities = JSON.parse(localStorage.getItem('geminiActivities') || '[]');
-        localActivities.push(...newActivities);
-        localStorage.setItem('geminiActivities', JSON.stringify(localActivities));
+        const responseText = await callGeminiWithParts([{ text: prompt }]);
+        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const newActivities = JSON.parse(jsonString);
 
+        if (!Array.isArray(newActivities)) {
+            throw new Error("Gemini did not return a valid array.");
+        }
+        
+        // Add to local state for immediate rendering
+        currentData.activitiesData.push(...newActivities);
+
+        // Store in localStorage for the session
+        const existingAiActivities = JSON.parse(localStorage.getItem('ai_added_activities')) || [];
+        localStorage.setItem('ai_added_activities', JSON.stringify([...existingAiActivities, ...newActivities]));
+        
+        // Re-render with the new activities
         displayedActivitiesCount = currentData.activitiesData.length;
-        renderActivities(); // Re-render with the new data
-        initMap(); // Update map with new locations
+        renderActivities(); 
+        initMap(); // Update map with new markers
 
     } catch (error) {
-        console.error("Error finding more activities with Gemini:", error, responseText);
+        console.error("Error finding more activities with Gemini:", error);
         alert("לא הצלחנו למצוא פעילויות נוספות כרגע, נסה שוב מאוחר יותר.");
+    } finally {
         const loadMoreBtn = document.getElementById('load-more-btn');
         loadMoreBtn.textContent = 'מצא הצעות נוספות עם AI ✨';
         loadMoreBtn.disabled = false;
     }
 }
 
+
 function handleCarousel(direction) {
     const carouselInner = document.getElementById('carousel-inner');
-    const totalImages = currentData.photoAlbum ? currentData.photoAlbum.length : 0;
-    if (totalImages <= 1) return;
+    const totalImages = currentData.photoAlbum.length;
+    if (totalImages === 0) return;
+    
     const currentTransform = new DOMMatrix(getComputedStyle(carouselInner).transform);
     const currentOffset = currentTransform.m41;
     const imageWidth = carouselInner.clientWidth;
+
+    let newIndex;
     const currentIndex = Math.round(Math.abs(currentOffset) / imageWidth);
-    let newIndex = direction === 'next' ? (currentIndex + 1) % totalImages : (currentIndex - 1 + totalImages) % totalImages;
+
+    if (direction === 'next') {
+        newIndex = (currentIndex + 1) % totalImages;
+    } else {
+        newIndex = (currentIndex - 1 + totalImages) % totalImages;
+    }
+    
     carouselInner.style.transform = `translateX(-${newIndex * 100}%)`;
 }
 
+
 async function handleImageUpload(event) {
-    /**
-     * ==================================================================================
-     * חשוב: כדי שהעלאת תמונות תעבוד, יש להגדיר חוקי אבטחה ב-Firebase Storage.
-     * 1. פתח את מסוף Firebase של הפרויקט שלך.
-     * 2. נווט אל Storage -> Rules.
-     * 3. החלף את התוכן הקיים בחוקים הבאים ולחץ על "Publish":
-     * * rules_version = '2';
-     * service firebase.storage {
-     * match /b/{bucket}/o {
-     * match /{allPaths=**} {
-     * allow read, write: if true; // In a real app, secure this with: if request.auth != null;
-     * }
-     * }
-     * }
-     * ==================================================================================
-     */
     const files = event.target.files;
     if (!files.length) return;
+
     alert(`מעלה ${files.length} תמונות...`);
+
     for (const file of files) {
         const timestamp = Date.now();
-        const storageRef = ref(storage, `trip-photos/${timestamp}-${file.name}`);
-        try {
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-            const newPhoto = { url: downloadURL, uploadedAt: timestamp };
-            const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-            await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
-        } catch(e) {
-            console.error("Upload failed", e);
-            alert("העלאת התמונה נכשלה. אנא בדוק את חוקי האבטחה של Firebase Storage ואת הגדרות ה-CORS.");
-        }
+        const storageRef = ref(storage, `trip-photos/${userId}/${timestamp}-${file.name}`);
+        
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+
+        const newPhoto = {
+            url: downloadURL,
+            uploadedAt: timestamp
+        };
+        
+        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+        await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
     }
     alert("התמונות הועלו בהצלחה!");
 }
@@ -808,77 +921,175 @@ async function handlePostBulletinMessage() {
     const input = document.getElementById('bulletin-input');
     const text = input.value.trim();
     if (!text) return;
-    const newMessage = { text, timestamp: Date.now() };
+
+    const newMessage = {
+        text: text,
+        timestamp: Date.now()
+    };
+
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
     await updateDoc(docRef, { bulletinBoard: arrayUnion(newMessage) });
+    
     input.value = '';
 }
 
 async function handleAddExpense() {
     const descInput = document.getElementById('expense-desc');
     const amountInput = document.getElementById('expense-amount');
-    if (!descInput.value.trim() || !amountInput.value.trim()) return;
-    const newExpense = { desc: descInput.value.trim(), amount: parseFloat(amountInput.value), timestamp: Date.now() };
+    
+    const desc = descInput.value.trim();
+    const amount = amountInput.value.trim();
+    const category = "General";
+    
+    if (!desc || !amount) return;
+
+    const newExpense = {
+        desc,
+        amount: parseFloat(amount),
+        category,
+        timestamp: Date.now()
+    };
+    
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
     await updateDoc(docRef, { expenses: arrayUnion(newExpense) });
-    descInput.value = ''; amountInput.value = '';
+    
+    descInput.value = '';
+    amountInput.value = '';
 }
 
 function handleCurrencyConversion(event) {
-    document.getElementById('currency-ils').value = (event.target.value * 4.1).toFixed(2);
+    const chfValue = event.target.value;
+    const ilsInput = document.getElementById('currency-ils');
+    const ILS_RATE = 4.1; 
+    ilsInput.value = (chfValue * ILS_RATE).toFixed(2);
 }
 
 function handleShareWhatsApp() {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`היי! בואו תראו את תכנון הטיול שלנו לז'נבה: ${window.location.href}`)}`, '_blank');
+    const text = encodeURIComponent(`היי! בואו תראו את תכנון הטיול שלנו לז'נבה: ${window.location.href}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
 }
 
 function handleAddToCalendar() {
-    const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("טיול משפחתי לז'נבה")}&dates=20250824/20250830&details=${encodeURIComponent(`קישור למדריך: ${window.location.href}`)}&location=${encodeURIComponent("Geneva, Switzerland")}`;
+    const title = encodeURIComponent("טיול משפחתי לז'נבה");
+    const startDate = "20250824";
+    const endDate = "20250830";
+    const details = encodeURIComponent(`קישור למדריך הטיול האינטראקטיבי: ${window.location.href}`);
+    const location = encodeURIComponent("Geneva, Switzerland");
+    
+    const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
+    
     window.open(googleCalendarUrl, '_blank');
 }
 
-function renderLuggage() {
+// **CHANGE**: Updated to render luggage with size
+function renderLuggageManagement() {
     const container = document.getElementById('luggage-list-container');
     if (!container || !currentData.luggageData) return;
     container.innerHTML = currentData.luggageData.map((item, index) => `
-        <div class="bg-secondary p-4 rounded-lg flex justify-between items-center">
+        <div class="bg-secondary p-4 rounded-lg flex justify-between items-start">
             <div>
                 <h4 class="font-bold text-lg">${item.name}</h4>
                 <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
                  ${item.size ? `<p class="text-sm"><strong>גודל:</strong> ${item.size}</p>` : ''}
+                 ${item.weight ? `<p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>` : ''}
+                 ${item.notes ? `<p class="text-sm mt-1"><em>${item.notes}</em></p>` : ''}
             </div>
             <button class="remove-luggage-btn text-red-400 hover:text-red-600" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
-        </div>`).join('');
+        </div>
+    `).join('');
 
     container.querySelectorAll('.remove-luggage-btn').forEach(button => {
         button.addEventListener('click', handleRemoveLuggage);
     });
 }
 
+// **CHANGE**: Updated to handle luggage size
 async function handleAddLuggage() {
     const nameInput = document.getElementById('new-luggage-name');
     const ownerInput = document.getElementById('new-luggage-owner');
-    const sizeInput = document.getElementById('new-luggage-size');
+    const sizeInput = document.getElementById('new-luggage-size'); // Assumes an input with this ID exists
     const name = nameInput.value.trim();
     const owner = ownerInput.value.trim();
-    const size = sizeInput.value.trim();
-    if (!name || !owner) return;
-    const newLuggage = { name, owner, size };
+    const size = sizeInput ? sizeInput.value.trim() : '';
+
+    if (!name || !owner) {
+        alert("אנא מלאו שם ואחראי עבור המזוודה.");
+        return;
+    }
+
+    const newLuggage = { name, owner, size, weight: "", notes: "" };
+    
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    await updateDoc(docRef, { luggageData: arrayUnion(newLuggage) });
+    await updateDoc(docRef, {
+        luggageData: arrayUnion(newLuggage)
+    });
+
     nameInput.value = '';
     ownerInput.value = '';
-    sizeInput.value = '';
+    if(sizeInput) sizeInput.value = '';
 }
 
 async function handleRemoveLuggage(event) {
     const indexToRemove = parseInt(event.currentTarget.dataset.index, 10);
-    const itemToRemove = currentData.luggageData[indexToRemove];
-    if (itemToRemove) {
+    const luggageToRemove = currentData.luggageData[indexToRemove];
+
+    if (luggageToRemove) {
         const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-        await updateDoc(docRef, { luggageData: arrayRemove(itemToRemove) });
+        await updateDoc(docRef, {
+            luggageData: arrayRemove(luggageToRemove)
+        });
     }
 }
+
+// **CHANGE**: Updated to send luggage size to AI
+async function handleRecalculatePackingPlan() {
+    const resultContainer = document.getElementById('packing-suggestion-result');
+    resultContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
+
+    const itemsToPack = [];
+    for (const category in currentData.packingListData) {
+        currentData.packingListData[category].forEach(item => {
+            if (item.checked) {
+                itemsToPack.push(item.name);
+            }
+        });
+    }
+
+    const availableLuggage = JSON.stringify(currentData.luggageData.map(l => ({ name: l.name, owner: l.owner, size: l.size || 'לא צוין' })));
+
+    const prompt = `
+        You are an expert packing assistant. Your task is to create an optimal packing plan for a family.
+        Given the following list of items to pack and the available luggage (including their sizes), please suggest where to put each item.
+        Organize the response by luggage item. Be smart about it - group similar items, consider the luggage size, and consider what needs to be easily accessible (like documents, snacks for kids).
+        The response should be in Hebrew and formatted with Markdown.
+
+        Items to pack: ${itemsToPack.join(', ')}
+        Available luggage: ${availableLuggage}
+
+        Example format:
+        
+        ### מזוודה גדולה (גדולה)
+        - בגדים של כולם
+        - נעליים
+        
+        ### תיק גב עדי (קטן)
+        - חיתולים ומגבונים
+        - חטיפים
+        - מסמכים
+    `;
+
+    try {
+        const responseText = await callGeminiWithParts([{ text: prompt }]);
+        resultContainer.innerHTML = responseText.replace(/### (.*?)\n/g, '<h4 class="font-bold text-lg mt-4 mb-2">$1</h4>').replace(/-\s(.*?)\n/g, '<li class="ml-5 list-disc">$1</li>').replace(/\n/g, '<br>');
+
+    } catch (error) {
+        console.error("Error recalculating packing plan:", error);
+        resultContainer.innerHTML = '<p class="text-red-500">שגיאה בחישוב תכנית האריזה. נסה שוב.</p>';
+    }
+}
+
+
+// --- MODAL POPULATION FUNCTIONS ---
 
 function populateHotelDetails() {
     if (!currentData || !currentData.hotelData) return;
@@ -1077,55 +1288,6 @@ function findAndDisplayNearby() {
 }
 
 // --- GEMINI & AI CALLS ---
-async function handleRecalculatePackingPlan() {
-    const resultContainer = document.getElementById('packing-suggestion-result');
-    resultContainer.innerHTML = '<div class="flex justify-center"><div class="loader"></div></div>';
-    
-    const packingList = JSON.stringify(currentData.packingListData);
-    const luggageList = JSON.stringify(currentData.luggageData);
-    
-    const prompt = `You are an expert packing assistant. Based on the following packing list of items and the available luggage (including their sizes), create an optimal packing plan for a family. Assign each category of items to the most suitable bag. 
-    
-    Item List (JSON): ${packingList}
-    Available Luggage (JSON): ${luggageList}
-    
-    Please provide the response in Hebrew, formatted clearly with Markdown, indicating which items go into which bag. For example:
-    
-    ### מזוודה גדולה (גדולה)
-    - ביגוד (מבוגרים)
-    - ביגוד (ילדים)
-    
-    ### תיק עלייה למטוס (קטן)
-    - מסמכים וכסף
-    - אלקטרוניקה
-    `;
-    
-    try {
-        const response = await callGeminiWithParts([{ text: prompt }]);
-        resultContainer.innerHTML = response.replace(/\n/g, '<br>'); // Simple markdown to HTML
-    } catch (error) {
-        console.error("Error recalculating packing plan:", error);
-        resultContainer.innerHTML = '<p class="text-red-500">שגיאה ביצירת תכנית האריזה. נסה שוב.</p>';
-    }
-}
-
-async function handlePackingSuggestion() { 
-    // This is the image-based packing assistant
-    const resultContainer = document.getElementById('packing-suggestion-result');
-    resultContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
-    // In a real scenario, you would get the base64 strings of the uploaded images here
-    // For this example, we'll simulate the call with a text prompt
-    const prompt = `You are a visual packing expert. A user has provided an image of their suitcase and an image of the items they want to pack. Analyze the images and provide a step-by-step guide in HEBREW on how to best fit the items into the suitcase, maximizing space. (Simulated response - image analysis not implemented).`;
-
-    try {
-        const responseText = await callGeminiWithParts([{ text: prompt }]);
-        resultContainer.innerHTML = responseText.replace(/\n/g, '<br>');
-    } catch (error) {
-        console.error("Error getting packing suggestion:", error);
-        resultContainer.innerHTML = '<p class="text-red-500">שגיאה בקבלת הצעת אריזה. נסה שוב.</p>';
-    }
-}
-
 
 async function handlePlanRequest(event) {
     const button = event.target.closest('button');
@@ -1188,25 +1350,21 @@ async function handleSummaryRequest(event) {
     const geminiResponse = await callGeminiWithParts([{ text: prompt }]);
     showTextResponseModal(`✨ סיכום לילדים - ${title} ✨`, geminiResponse);
 }
-async function handleCustomPlanRequest() { /* ... */ }
-async function handleChatSend() { /* ... */ }
-function handleChatImageUpload(event) { /* ... */ }
-function removeChatImage() { /* ... */ }
-function handleDownloadSuggestion() { /* ... */ }
+
 async function handleSwapActivity(button) {
     const { dayIndex, planType, itemIndex } = button.dataset;
 
     const day = currentData.itineraryData.find(d => d.dayIndex == dayIndex);
     if (!day || !day[planType]) return;
 
-    let plannedActivityIds = [];
-    currentData.itineraryData.forEach(dayItin => {
-        if(dayItin.mainPlan && dayItin.mainPlan.items) dayItin.mainPlan.items.forEach(i => plannedActivityIds.push(i.activityId));
-        if(dayItin.alternativePlan && dayItin.alternativePlan.items) dayItin.alternativePlan.items.forEach(i => plannedActivityIds.push(i.activityId));
-        if(dayItin.alternativePlan2 && dayItin.alternativePlan2.items) dayItin.alternativePlan2.items.forEach(i => plannedActivityIds.push(i.activityId));
+    let plannedActivityIds = new Set();
+    currentData.itineraryData.forEach(dayInfo => {
+        dayInfo.mainPlan.items.forEach(i => plannedActivityIds.add(i.activityId));
+        if (dayInfo.alternativePlan) dayInfo.alternativePlan.items.forEach(i => plannedActivityIds.add(i.activityId));
+        if (dayInfo.alternativePlan2) dayInfo.alternativePlan2.items.forEach(i => plannedActivityIds.add(i.activityId));
     });
-    
-    const availableActivities = currentData.activitiesData.filter(a => !plannedActivityIds.includes(a.id) && a.category !== 'בית מרקחת');
+
+    const availableActivities = currentData.activitiesData.filter(a => !plannedActivityIds.has(a.id) && a.category !== 'בית מרקחת');
     
     if (availableActivities.length === 0) {
         alert("לא נמצאו פעילויות חלופיות פנויות!");
@@ -1216,7 +1374,7 @@ async function handleSwapActivity(button) {
     const swapList = document.getElementById('swap-activity-list');
     swapList.innerHTML = availableActivities.map(act => `
         <button class="w-full text-right p-3 bg-gray-100 hover:bg-teal-100 rounded-md" data-new-activity-id="${act.id}">
-            <strong class="text-accent">${act.name}</strong> (${act.category}) - ${formatTravelTime(act.time)}
+            <strong class="text-accent">${act.name}</strong> (${act.category}) - ${act.time} דקות
         </button>
     `).join('');
     
@@ -1225,7 +1383,7 @@ async function handleSwapActivity(button) {
             const newActivityId = parseInt(swapButton.dataset.newActivityId);
             const newActivity = currentData.activitiesData.find(a => a.id === newActivityId);
 
-            const updatedItinerary = JSON.parse(JSON.stringify(currentData.itineraryData)); 
+            const updatedItinerary = JSON.parse(JSON.stringify(currentData.itineraryData));
             updatedItinerary[dayIndex - 1][planType].items[itemIndex] = {
                 activityId: newActivity.id,
                 description: newActivity.description
@@ -1235,7 +1393,7 @@ async function handleSwapActivity(button) {
             await updateDoc(docRef, { itineraryData: updatedItinerary });
 
             document.getElementById('swap-activity-modal').classList.add('hidden');
-        });
+        }, { once: true }); // Prevent multiple clicks
     });
 
     openModal('swap-activity-modal');

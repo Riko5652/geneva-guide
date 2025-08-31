@@ -18,12 +18,17 @@ exports.handler = async function() {
     for (const [key, value] of Object.entries(config)) {
         if (!value) {
             const envVarName = `VITE_FIREBASE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`;
+            console.error(`Missing required environment variable: ${envVarName}`); // Added error log
             return {
                 statusCode: 500,
                 body: JSON.stringify({ error: `Missing required environment variable: ${envVarName}` })
             };
         }
     }
+    
+    // **CHANGE**: Added a success log for easier debugging in Netlify Function logs.
+    // This helps confirm that the function executed correctly and is serving the right config.
+    console.log(`Successfully retrieved Firebase config for project: ${config.projectId}`);
 
     return {
         statusCode: 200,
@@ -31,4 +36,3 @@ exports.handler = async function() {
         body: JSON.stringify(config)
     };
 };
-

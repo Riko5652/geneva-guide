@@ -1,0 +1,12 @@
+[
+  {
+    "origin": ["https://lipetztrip.netlify.app", "http://localhost:8888"],
+    "method": ["GET", "POST", "PUT", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "Access-Control-Allow-Origin",
+      "x-goog-resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

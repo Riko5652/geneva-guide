@@ -1,67 +1,61 @@
-// This Netlify Function acts as a secure proxy to the Google Gemini API.
-// It uses the 'node-fetch' library for making HTTP requests from the Node.js environment.
-const fetch = require('node-fetch');
+import { toBase64 } from './utils.js';
 
-// The main handler function for the Netlify Function.
-// It's an async function that receives 'event' and 'context' objects.
-exports.handler = async function(event) {
-  // We only want to handle POST requests from our frontend.
-  // Any other HTTP method will be rejected.
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+/**
+ * --- GEMINI AI ---
+ * Calls the unified AI endpoint via a serverless function.
+ */
+export async function callGeminiWithParts(parts) {
+    try {
+        const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: "user", parts }] })
+        });
 
-  // Retrieve the secret Gemini API key from environment variables.
-  // This is crucial for security, as the key is never exposed on the client-side.
-  const API_KEY = process.env.GEMINI_API_KEY;
-  if (!API_KEY) {
-      // If the API key is not configured in Netlify, return a server error.
-      return { statusCode: 500, body: JSON.stringify({ error: "GEMINI_API_KEY environment variable not set."}) };
-  }
-  
-  // The official Gemini API endpoint URL. We append our secret key here.
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API error: ${response.status} ${errorText}`);
+        }
 
-  try {
-    // The body of the request from the frontend (script.js) contains the prompt for Gemini.
-    // We parse it from the event object.
-    const requestBody = JSON.parse(event.body);
+        const result = await response.json();
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
 
-    // Make the actual, secure server-to-server request to the Gemini API.
-    // We forward the request body that we received from the client.
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    // If the response from the Gemini API is not successful (e.g., 400, 500),
-    // we log the error and forward the error details to the client for debugging.
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Gemini API Error:', errorData);
-        return {
-            statusCode: response.status,
-            body: JSON.stringify(errorData),
-        };
+        console.error("Unexpected Gemini response structure:", result);
+        return "מצטער, קיבלתי תשובה בפורמט לא צפוי.";
+    } catch (error) {
+        console.error("Error calling Gemini function:", error);
+        return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
-    
-    // If the API call was successful, we parse the JSON response.
-    const data = await response.json();
-
-    // Send the successful response from Gemini back to the client (script.js).
-    return {
-      statusCode: 200,
-      body: JSON.stringify(data),
-    };
-  } catch (error) {
-    // This catches any other errors, like network issues or JSON parsing failures.
-    console.error('Error in Netlify function:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error' }),
-    };
-  }
 }
+
+/**
+ * --- GEMINI PROMPT HELPERS ---
+ * Functions to create specific prompts for different AI tasks.
+ */
+export function createActivityPrompt(existingActivities) {
+    return `Suggest 3 more fun activities for a family with toddlers in/near Geneva, Switzerland. Avoid duplicating these: ${JSON.stringify(existingActivities)}. Provide ONLY a JSON array of objects. Each object must have keys: "id", "name", "category", "time", "transport", "address", "description", "image", "link", "lat", "lon", "cost". For "image", find a real, royalty-free URL. If unavailable, return "". "time" is travel duration in minutes. "id" must be a unique random number > 1000.`;
+}
+
+export function createPackingPrompt(packingList, luggage, theme = "") {
+    if (theme) {
+        return `Based on this packing list: ${JSON.stringify(packingList)}, suggest new items for a family trip to Geneva with toddlers, focusing on "${theme}". Respond ONLY with a JSON object of new items, like {"Category": ["item1"]}.`;
+    } else {
+        const checked = Object.values(packingList).flat().filter(i => i.checked).map(i => i.name);
+        return `Create an optimal packing plan. Pack these items: ${checked.join(', ')} into this luggage: ${JSON.stringify(luggage)}. Consider luggage size and item types. Respond in Hebrew using Markdown.`;
+    }
+}
+
+export async function analyzePackingImages(suitcaseFile, itemsFile) {
+    if (!suitcaseFile || !itemsFile) throw new Error("Missing images");
+    
+    const suitcase64 = await toBase64(suitcaseFile);
+    const items64 = await toBase64(itemsFile);
+    const parts = [
+        { text: "Visually analyze the suitcase and items images. Suggest a packing plan in Hebrew." },
+        { inline_data: { mime_type: suitcaseFile.type, data: suitcase64 } },
+        { inline_data: { mime_type: itemsFile.type, data: items64 } }
+    ];
+    return callGeminiWithParts(parts);
+}
+

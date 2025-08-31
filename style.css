@@ -96,6 +96,7 @@ body {
 
 .modal {
     transition: opacity 0.3s ease-in-out;
+    z-index: 50;
 }
 
 section {
@@ -263,6 +264,16 @@ section {
 .bp-details>div {
     display: flex;
     flex-direction: column;
+}
+
+/* New styles for the small loader inside buttons */
+.loader-small {
+    border: 2px solid #f3f3f3; /* Light grey */
+    border-top: 2px solid #fff; /* White */
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
 }
 
 /* New styles for integrations modal */

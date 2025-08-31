@@ -1,17 +1,17 @@
 // Firebase Imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp, addDoc, collection, query, setDoc, arrayUnion, arrayRemove, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // Global State
 let db, auth, storage, userId;
-let currentData = null; // This will hold all our dynamic data from Firestore
+let currentData = null;
 let map = null;
 let currentCategoryFilter = 'all';
 let currentTimeFilter = 'all';
-let displayedActivitiesCount = 6; // Initial number of activities to show
-const ACTIVITIES_INCREMENT = 6; // How many to load when "Load More" is clicked
+let displayedActivitiesCount = 6;
+const ACTIVITIES_INCREMENT = 6;
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -56,7 +56,6 @@ function loadAndRenderAllData() {
         if (docSnap.exists()) {
             currentData = docSnap.data();
 
-            // Load AI-generated activities from localStorage for the current session
             const storedAiActivities = JSON.parse(localStorage.getItem('ai_added_activities'));
             if (storedAiActivities && Array.isArray(storedAiActivities)) {
                 const existingIds = new Set(currentData.activitiesData.map(a => a.id));
@@ -99,7 +98,7 @@ function renderItinerary() {
     const dayCardsContainer = itineraryContainer.querySelector('.space-y-8');
     if (!dayCardsContainer) return;
 
-    dayCardsContainer.innerHTML = ''; // Clear static HTML
+    dayCardsContainer.innerHTML = '';
 
     currentData.itineraryData.forEach(dayInfo => {
         const dayCardHTML = createDayCard(dayInfo);
@@ -222,7 +221,6 @@ function renderExpenses() {
     expenseTotal.textContent = `${total.toFixed(2)} CHF`;
 }
 
-
 function renderActivities() {
     if (!currentData || !currentData.activitiesData) return;
     const activitiesGrid = document.getElementById('activities-grid');
@@ -264,7 +262,6 @@ function renderActivities() {
         loadMoreBtn.disabled = false;
     }
 }
-
 
 function renderBookingInfo() {
     if (!currentData || !currentData.flightData) return;
@@ -364,7 +361,6 @@ function getWeatherInfo(code) {
     return codes[code] || { description: "לא ידוע", icon: "🤷" };
 }
 
-
 function initMap() {
     if (map) { 
         map.eachLayer(layer => {
@@ -392,7 +388,6 @@ function initMap() {
         }
     });
 }
-
 
 function updateProgressBar() {
     if (!currentData || !currentData.tripTimeline) return;
@@ -423,7 +418,6 @@ function updateProgressBar() {
     document.getElementById('progress-bar-text').textContent = currentStatus;
     document.getElementById('progress-bar-info').textContent = infoText;
 }
-
 
 function populateItineraryDetails() {
     if (!currentData || !currentData.activitiesData) return;
@@ -523,7 +517,6 @@ function setupEventListeners() {
         if (e.target.id === 'add-item-btn') handleAddPackingItem();
         if (e.target.id === 'update-list-by-theme-btn') handleUpdateListByTheme();
         if (e.target.id === 'get-packing-suggestion-btn') handlePackingSuggestion();
-        if (e.target.id === 'download-suggestion-btn') handleDownloadSuggestion();
         if (e.target.id === 'share-whatsapp-btn') handleShareWhatsApp();
         if (e.target.id === 'add-to-calendar-btn') handleAddToCalendar();
         if (e.target.id === 'add-luggage-btn') handleAddLuggage();
@@ -542,12 +535,10 @@ function setupEventListeners() {
             e.target.closest('.modal').classList.add('hidden');
             e.target.closest('.modal').classList.remove('flex');
         }
-        if (e.target.closest('.upload-item-image-btn')) {
-            e.target.closest('.visual-packing-item').querySelector('.item-image-input').click();
-        }
-        if (e.target.closest('.remove-item-btn')) {
-             handleRemovePackingItem(e.target.closest('.remove-item-btn'));
-        }
+        
+        // Packing guide buttons
+        if (e.target.closest('#upload-suitcase-btn')) document.getElementById('suitcase-image-input').click();
+        if (e.target.closest('#upload-items-btn')) document.getElementById('items-image-input').click();
     });
 
     document.getElementById('image-upload-input')?.addEventListener('change', handleImageUpload);
@@ -573,18 +564,26 @@ function setupEventListeners() {
         });
     });
 
-    document.getElementById('packing-guide-modal')?.addEventListener('change', e => {
-        if (e.target.classList.contains('item-image-input')) {
-            handlePackingItemImageUpload(e);
+    document.getElementById('packing-guide-modal')?.addEventListener('click', e => {
+        if (e.target.closest('.remove-item-btn')) {
+            handleRemovePackingItem(e.target.closest('.remove-item-btn'));
         }
+        if (e.target.closest('.upload-item-image-btn')) {
+            e.target.closest('.visual-packing-item').querySelector('.item-image-input').click();
+        }
+    });
+
+    document.getElementById('packing-guide-modal')?.addEventListener('change', e => {
         if (e.target.classList.contains('packing-item-checkbox')) {
             handleChecklistItemToggle(e);
+        }
+        if (e.target.classList.contains('item-image-input')) {
+            handlePackingItemImageUpload(e);
         }
     });
 
     document.body.dataset.listenersAttached = 'true';
 }
-
 
 function openModal(modalId, onOpenCallback) {
     const modal = document.getElementById(modalId);
@@ -602,18 +601,6 @@ function setupPackingGuideModal() {
     
     const categorySelect = document.getElementById('new-item-category-select');
     categorySelect.innerHTML = Object.keys(currentData.packingListData).map(cat => `<option value="${cat}">${cat}</option>`).join('');
-
-    const modal = document.getElementById('packing-guide-modal');
-    modal.querySelectorAll('.accordion-button').forEach(button => {
-        if (!button.dataset.listenerAttached) {
-            button.addEventListener('click', () => {
-                const content = button.nextElementSibling;
-                button.classList.toggle('open');
-                content.style.maxHeight = content.style.maxHeight ? null : `${content.scrollHeight}px`;
-            });
-            button.dataset.listenerAttached = 'true';
-        }
-    });
     
     updatePackingProgress();
 }
@@ -631,26 +618,28 @@ function renderPackingGuide() {
             const itemsGrid = document.createElement('div');
             itemsGrid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4';
             
-            itemsGrid.innerHTML = currentData.packingListData[category].map(item => `
+            itemsGrid.innerHTML = currentData.packingListData[category].map(item => {
+                const placeholderText = item.name ? encodeURIComponent(item.name) : 'Item';
+                const imageUrl = item.imageUrl || `https://placehold.co/150x150/e2e8f0/94a3b8?text=${placeholderText}`;
+                
+                return `
                 <div class="visual-packing-item text-center">
-                    <div class="relative w-full aspect-square bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden mb-2 group">
-                        <img src="${item.imageUrl || 'https://placehold.co/150x150/e2e8f0/94a3b8?text=תמונה'}" alt="${item.name}" class="w-full h-full object-cover">
+                    <div class="relative w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden mb-2 group border">
+                        <img src="${imageUrl}" alt="${item.name}" class="w-full h-full object-cover">
                         <button class="upload-item-image-btn absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity" data-category="${category}" data-name="${item.name}">
                             <i class="fas fa-camera fa-2x"></i>
                         </button>
                         <input type="file" accept="image/*" class="item-image-input hidden" data-category="${category}" data-name="${item.name}">
                     </div>
-                    <div class="flex items-center justify-center">
-                        <label class="flex-grow flex items-center justify-center cursor-pointer">
-                            <input type="checkbox" class="packing-item-checkbox form-checkbox h-4 w-4 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-name="${item.name}">
-                            <span class="mr-2 text-sm text-gray-700">${item.name}</span>
-                        </label>
+                    <div class="flex items-center justify-center gap-x-2">
+                        <input type="checkbox" class="packing-item-checkbox form-checkbox h-4 w-4 text-teal-600 rounded shrink-0" ${item.checked ? 'checked' : ''} data-category="${category}" data-name="${item.name}">
+                        <span class="text-sm text-gray-700 truncate" title="${item.name}">${item.name}</span>
                         <button class="remove-item-btn text-red-400 hover:text-red-600 text-xs" data-category="${category}" data-name="${item.name}">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             categorySection.appendChild(itemsGrid);
             container.appendChild(categorySection);
@@ -663,7 +652,9 @@ async function handlePackingItemImageUpload(event) {
     if (!file || !userId) return;
 
     const { category, name } = event.target.dataset;
-    alert(`מעלה תמונה עבור ${name}...`);
+    
+    const uploadButton = event.target.closest('.visual-packing-item').querySelector('.upload-item-image-btn');
+    uploadButton.innerHTML = '<div class="loader-small"></div>';
 
     try {
         const storageRef = ref(storage, `packing-item-images/${userId}/${Date.now()}-${file.name}`);
@@ -683,9 +674,10 @@ async function handlePackingItemImageUpload(event) {
     } catch (error) {
         console.error("Error uploading packing item image:", error);
         alert("העלאת התמונה נכשלה.");
+    } finally {
+        uploadButton.innerHTML = '<i class="fas fa-camera fa-2x"></i>';
     }
 }
-
 
 async function handleChecklistItemToggle(event) {
     const { category, name } = event.target.dataset;
@@ -722,17 +714,15 @@ async function handleAddPackingItem() {
 
 async function handleRemovePackingItem(button) {
     const { category, name } = button.dataset;
-    if (confirm(`האם למחוק את הפריט "${name}"?`)) {
-        const currentItems = currentData.packingListData[category] || [];
-        const newItems = currentItems.filter(item => item.name !== name);
+    
+    const currentItems = currentData.packingListData[category] || [];
+    const newItems = currentItems.filter(item => item.name !== name);
 
-        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-        await updateDoc(docRef, {
-            [`packingListData.${category}`]: newItems
-        });
-    }
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    await updateDoc(docRef, {
+        [`packingListData.${category}`]: newItems
+    });
 }
-
 
 async function handleUpdateListByTheme() {
     const input = document.getElementById('theme-input');
@@ -742,7 +732,7 @@ async function handleUpdateListByTheme() {
     showTextResponseModal("עדכון רשימה חכם", '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>');
     
     const existingList = JSON.stringify(currentData.packingListData);
-    const prompt = `Based on the following existing packing list (JSON format), please suggest a list of additional items to pack for a family with toddlers for a trip to Geneva, focusing on the theme: "${theme}". Please provide ONLY a JSON object as a response, where keys are categories and values are arrays of item names (strings). Do not include items that are already on the list.
+    const prompt = `Based on the following existing packing list (JSON format), suggest additional items to pack for a family with toddlers for a trip to Geneva, focusing on the theme: "${theme}". Provide ONLY a JSON object as a response, where keys are categories and values are arrays of item names (strings). Do not include items that are already on the list.
     
     Existing List:
     ${existingList}
@@ -779,7 +769,6 @@ async function handleUpdateListByTheme() {
     }
 }
 
-
 function updatePackingProgress() {
     if (!currentData.packingListData) return;
     const progressBar = document.getElementById('packingProgressBar');
@@ -796,7 +785,6 @@ function updatePackingProgress() {
     }
     const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
     progressBar.style.width = percentage + '%';
-
     progressText.textContent = `הושלמו ${percentage}% (${checked}/${total})`;
 }
 
@@ -864,7 +852,6 @@ async function handleFindMoreWithGemini() {
     }
 }
 
-
 function handleCarousel(direction) {
     const carouselInner = document.getElementById('carousel-inner');
     const totalImages = currentData.photoAlbum.length;
@@ -886,9 +873,8 @@ function handleCarousel(direction) {
     carouselInner.style.transform = `translateX(-${newIndex * 100}%)`;
 }
 
-
 async function handleImageUpload(event) {
-    const files = event.target.files;
+    const files = Array.from(event.target.files);
     if (!files.length) return;
 
     const uploadStatus = document.getElementById('upload-status');
@@ -897,39 +883,44 @@ async function handleImageUpload(event) {
         uploadStatus.classList.remove('hidden', 'text-red-500');
     }
 
-
-    for (const file of files) {
+    const uploadPromises = files.map(file => {
         const timestamp = Date.now();
         const storageRef = ref(storage, `trip-photos/${userId}/${timestamp}-${file.name}`);
         
-        try {
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-    
-            const newPhoto = {
-                url: downloadURL,
-                uploadedAt: timestamp,
-                owner: userId
-            };
-            
-            const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-            await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
+        return uploadBytes(storageRef, file)
+            .then(snapshot => getDownloadURL(snapshot.ref))
+            .then(downloadURL => {
+                const newPhoto = {
+                    url: downloadURL,
+                    uploadedAt: timestamp,
+                    owner: userId
+                };
+                const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+                return updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
+            })
+            .catch(error => {
+                console.error("Upload failed for file:", file.name, error);
+                // Return a specific error object to identify failures
+                return { error: true, fileName: file.name };
+            });
+    });
 
-        } catch (error) {
-            console.error("Upload failed for file:", file.name, error);
-             if (uploadStatus) {
-                 uploadStatus.textContent = `העלאה נכשלה. בדוק את חוקי ה-CORS ב-Firebase Storage.`;
-                 uploadStatus.classList.add('text-red-500');
-             }
-            return;
+    const results = await Promise.all(uploadPromises);
+    
+    const successfulUploads = results.filter(result => !result?.error).length;
+    const failedUploads = results.length - successfulUploads;
+
+    if (uploadStatus) {
+        if (failedUploads > 0) {
+            uploadStatus.textContent = `הסתיימה ההעלאה. ${successfulUploads} הצלחות, ${failedUploads} כישלונות.`;
+            uploadStatus.classList.add('text-red-500');
+        } else {
+            uploadStatus.textContent = `כל ${successfulUploads} התמונות הועלו בהצלחה!`;
+            setTimeout(() => uploadStatus.classList.add('hidden'), 5000);
         }
     }
-    
-    if (uploadStatus) {
-        uploadStatus.textContent = "התמונות הועלו בהצלחה!";
-        setTimeout(() => uploadStatus.classList.add('hidden'), 3000);
-    }
 }
+
 
 async function handlePostBulletinMessage() {
     const input = document.getElementById('bulletin-input');
@@ -1004,8 +995,6 @@ function renderLuggageManagement() {
                 <h4 class="font-bold text-lg">${item.name}</h4>
                 <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
                  ${item.size ? `<p class="text-sm"><strong>גודל:</strong> ${item.size}</p>` : ''}
-                 ${item.weight ? `<p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>` : ''}
-                 ${item.notes ? `<p class="text-sm mt-1"><em>${item.notes}</em></p>` : ''}
             </div>
             <button class="remove-luggage-btn text-red-400 hover:text-red-600" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
         </div>
@@ -1022,14 +1011,14 @@ async function handleAddLuggage() {
     const sizeInput = document.getElementById('new-luggage-size');
     const name = nameInput.value.trim();
     const owner = ownerInput.value.trim();
-    const size = sizeInput ? sizeInput.value.trim() : '';
+    const size = sizeInput.value.trim();
 
     if (!name || !owner) {
         alert("אנא מלאו שם ואחראי עבור המזוודה.");
         return;
     }
 
-    const newLuggage = { name, owner, size, weight: "", notes: "" };
+    const newLuggage = { name, owner, size };
     
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
     await updateDoc(docRef, {
@@ -1038,7 +1027,7 @@ async function handleAddLuggage() {
 
     nameInput.value = '';
     ownerInput.value = '';
-    if(sizeInput) sizeInput.value = '';
+    sizeInput.value = '';
 }
 
 async function handleRemoveLuggage(event) {
@@ -1070,8 +1059,8 @@ async function handleRecalculatePackingPlan() {
 
     const prompt = `
         You are an expert packing assistant. Your task is to create an optimal packing plan for a family.
-        Given the following list of items to pack and the available luggage (including their sizes), please suggest where to put each item.
-        Organize the response by luggage item. Be smart about it - group similar items, consider the luggage size, and consider what needs to be easily accessible (like documents, snacks for kids).
+        Given the following list of items to pack and the available luggage (including their sizes), suggest where to put each item.
+        Organize the response by luggage item. Be smart about it - group similar items, consider the luggage size, and what needs to be easily accessible (like documents, snacks for kids).
         The response should be in Hebrew and formatted with Markdown.
 
         Items to pack: ${itemsToPack.join(', ')}
@@ -1099,6 +1088,50 @@ async function handleRecalculatePackingPlan() {
     }
 }
 
+async function handlePackingSuggestion() {
+    const resultContainer = document.getElementById('packing-suggestion-result');
+    const getSuggestionBtn = document.getElementById('get-packing-suggestion-btn');
+
+    const suitcaseImageInput = document.getElementById('suitcase-image-input');
+    const itemsImageInput = document.getElementById('items-image-input');
+
+    if (suitcaseImageInput.files.length === 0 || itemsImageInput.files.length === 0) {
+        resultContainer.textContent = 'Please upload both images first.';
+        return;
+    }
+
+    resultContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
+    getSuggestionBtn.disabled = true;
+
+    try {
+        const suitcaseBase64 = await toBase64(suitcaseImageInput.files[0]);
+        const itemsBase64 = await toBase64(itemsImageInput.files[0]);
+
+        const parts = [
+            { text: "You are a visual packing expert. Based on the two images provided (one of a suitcase, one of a pile of items), create a simple, bulleted list in Hebrew suggesting the best way to pack the items into the suitcase. Be smart about placing heavy items at the bottom and fragile items in the middle." },
+            { inline_data: { mime_type: suitcaseImageInput.files[0].type, data: suitcaseBase64 } },
+            { inline_data: { mime_type: itemsImageInput.files[0].type, data: itemsBase64 } }
+        ];
+
+        const responseText = await callGeminiWithParts(parts);
+        resultContainer.innerHTML = responseText.replace(/\n/g, '<br>');
+
+    } catch (error) {
+        console.error("Error getting packing suggestion:", error);
+        resultContainer.innerHTML = '<p class="text-red-500">שגיאה בקבלת הצעת אריזה. נסה שוב.</p>';
+    } finally {
+        getSuggestionBtn.disabled = false;
+    }
+}
+
+function toBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+    });
+}
 
 // --- MODAL POPULATION FUNCTIONS ---
 
@@ -1383,6 +1416,7 @@ async function handleSwapActivity(button) {
     }
 
     const swapList = document.getElementById('swap-activity-list');
+    swapList.innerHTML = ''; // Clear previous listeners
     swapList.innerHTML = availableActivities.map(act => `
         <button class="w-full text-right p-3 bg-gray-100 hover:bg-teal-100 rounded-md" data-new-activity-id="${act.id}">
             <strong class="text-accent">${act.name}</strong> (${act.category}) - ${act.time} דקות
@@ -1409,7 +1443,6 @@ async function handleSwapActivity(button) {
 
     openModal('swap-activity-modal');
 }
-
 
 // --- API CALL ---
 async function callGeminiWithParts(parts) {

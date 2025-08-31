@@ -1280,8 +1280,15 @@ async function callGeminiWithParts(parts) {
             throw new Error(`API error: ${response.status} ${errorText}`);
         }
         const result = await response.json();
+        // **FIX:** Safely access the text part of the response
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-        return text || "מצטער, לא הצלחתי להבין את הבקשה.";
+        if (text) {
+            return text;
+        } else {
+            // Log the problematic response for debugging
+            console.error("Unexpected Gemini response structure:", result);
+            return "מצטער, קיבלתי תשובה בפורמט לא צפוי.";
+        }
     } catch (error) {
         console.error("Error calling Gemini function:", error);
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";

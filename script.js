@@ -218,6 +218,7 @@ function renderActivities() {
     if (!currentData || !currentData.activitiesData) return;
     const activitiesGrid = document.getElementById('activities-grid');
     const loadMoreContainer = document.getElementById('load-more-container');
+    const loadMoreBtn = document.getElementById('load-more-btn');
     
     const filteredActivities = currentData.activitiesData.filter(activity => {
         if (activity.category === 'בית מרקחת') return false;
@@ -246,8 +247,12 @@ function renderActivities() {
 
     if (filteredActivities.length > displayedActivitiesCount) {
         loadMoreContainer.classList.remove('hidden');
+        loadMoreBtn.textContent = 'טען עוד פעילויות 🎈';
+        loadMoreBtn.disabled = false;
     } else {
-        loadMoreContainer.classList.add('hidden');
+        loadMoreContainer.classList.remove('hidden');
+        loadMoreBtn.textContent = 'מצא הצעות נוספות עם AI ✨';
+        loadMoreBtn.disabled = false;
     }
 }
 
@@ -503,7 +508,7 @@ function setupEventListeners() {
         if (e.target.closest('.nav-family-btn')) {
             openModal('family-details-modal', populateFamilyDetails);
         }
-         if (e.target.closest('.nav-nearby-btn')) {
+         if (e.target.closest('#find-nearby-btn')) {
             openModal('nearby-modal', findAndDisplayNearby);
         }
         
@@ -747,9 +752,67 @@ function updatePackingProgress() {
 }
 
 function handleLoadMore() {
-    displayedActivitiesCount += ACTIVITIES_INCREMENT;
-    renderActivities();
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const filteredActivities = currentData.activitiesData.filter(activity => {
+        if (activity.category === 'בית מרקחת') return false;
+        const categoryMatch = currentCategoryFilter === 'all' || activity.category === currentCategoryFilter;
+        let timeMatch = false;
+        if (currentTimeFilter === 'all') { timeMatch = true; }
+        else {
+            const time = parseInt(currentTimeFilter);
+            if (time === 20) timeMatch = activity.time <= 20;
+            else if (time === 40) timeMatch = activity.time > 20 && activity.time <= 40;
+            else if (time === 60) timeMatch = activity.time > 40;
+        }
+        return categoryMatch && timeMatch;
+    });
+
+    if (filteredActivities.length > displayedActivitiesCount) {
+        displayedActivitiesCount += ACTIVITIES_INCREMENT;
+        renderActivities();
+    } else {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerHTML = '<div class="loader"></div>';
+        handleFindMoreWithGemini();
+    }
 }
+
+async function handleFindMoreWithGemini() {
+    const prompt = `Please suggest 3 more fun activities for a family with toddlers in or very near Geneva, Switzerland. They should be similar to the types of activities already on this list, but not duplicates. Provide ONLY a JSON array of objects in your response, with no other text. Each object must have these exact keys: "id", "name", "category", "time", "transport", "address", "description", "image", "link", "lat", "lon", "cost". For the "image", use a relevant placeholder URL from placehold.co.
+    
+    Existing activities to avoid duplicating:
+    ${JSON.stringify(currentData.activitiesData.map(a => a.name))}
+    `;
+
+    try {
+        const responseText = await callGeminiWithParts([{ text: prompt }]);
+        const newActivities = JSON.parse(responseText);
+
+        // A quick validation to see if the response is an array
+        if (!Array.isArray(newActivities)) {
+            throw new Error("Gemini did not return a valid array.");
+        }
+
+        // Add new activities to the main data object
+        const updatedActivities = [...currentData.activitiesData, ...newActivities];
+
+        // Update Firestore
+        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+        await updateDoc(docRef, { activitiesData: updatedActivities });
+        
+        // After updating, reset the view to show the new items
+        displayedActivitiesCount = updatedActivities.length;
+        // The onSnapshot listener will automatically call renderActivities
+
+    } catch (error) {
+        console.error("Error finding more activities with Gemini:", error);
+        alert("לא הצלחנו למצוא פעילויות נוספות כרגע, נסה שוב מאוחר יותר.");
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        loadMoreBtn.textContent = 'מצא הצעות נוספות עם AI ✨';
+        loadMoreBtn.disabled = false;
+    }
+}
+
 
 function handleCarousel(direction) {
     const carouselInner = document.getElementById('carousel-inner');
@@ -1152,8 +1215,6 @@ async function handleSwapActivity(button) {
     const day = currentData.itineraryData.find(d => d.dayIndex == dayIndex);
     if (!day || !day[planType]) return;
 
-    const currentItem = day[planType].items[itemIndex];
-    
     // Find all activities already planned for this day to avoid duplicates
     let plannedActivityIds = [];
     currentData.itineraryData[dayIndex - 1].mainPlan.items.forEach(i => plannedActivityIds.push(i.activityId));
@@ -1171,19 +1232,38 @@ async function handleSwapActivity(button) {
         alert("לא נמצאו פעילויות חלופיות פנויות!");
         return;
     }
-    
-    const newActivity = availableActivities[Math.floor(Math.random() * availableActivities.length)];
-    
-    // Update the local data structure
-    const updatedItinerary = JSON.parse(JSON.stringify(currentData.itineraryData)); // Deep copy
-    updatedItinerary[dayIndex - 1][planType].items[itemIndex] = {
-        activityId: newActivity.id,
-        description: newActivity.description
-    };
 
-    // Update Firestore
-    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    await updateDoc(docRef, { itineraryData: updatedItinerary });
+    // Build and show the swap modal
+    const swapList = document.getElementById('swap-activity-list');
+    swapList.innerHTML = availableActivities.map(act => `
+        <button class="w-full text-right p-3 bg-gray-100 hover:bg-teal-100 rounded-md" data-new-activity-id="${act.id}">
+            <strong class="text-accent">${act.name}</strong> (${act.category}) - ${act.time} דקות
+        </button>
+    `).join('');
+    
+    // Add listeners to the new buttons
+    swapList.querySelectorAll('button').forEach(swapButton => {
+        swapButton.addEventListener('click', async () => {
+            const newActivityId = parseInt(swapButton.dataset.newActivityId);
+            const newActivity = currentData.activitiesData.find(a => a.id === newActivityId);
+
+            // Update the local data structure
+            const updatedItinerary = JSON.parse(JSON.stringify(currentData.itineraryData)); // Deep copy
+            updatedItinerary[dayIndex - 1][planType].items[itemIndex] = {
+                activityId: newActivity.id,
+                description: newActivity.description
+            };
+
+            // Update Firestore
+            const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+            await updateDoc(docRef, { itineraryData: updatedItinerary });
+
+            // Close modal
+            document.getElementById('swap-activity-modal').classList.add('hidden');
+        });
+    });
+
+    openModal('swap-activity-modal');
 }
 
 

@@ -2,6 +2,7 @@
   "name": "geneva-guide-project",
   "version": "1.0.0",
   "description": "Interactive family guide to Geneva, deployed on Netlify.",
+  "type": "module",
   "main": "script.js",
   "scripts": {
     "start": "netlify dev"
@@ -9,10 +10,10 @@
   "author": "Dor Lipetz",
   "license": "ISC",
   "dependencies": {
-    "@google/generative-ai": "^0.2.1"
+    "@google/generative-ai": "^0.2.1",
+    "firebase": "^11.0.0"
   },
   "devDependencies": {
     "netlify-cli": "^17.15.0"
   }
 }
-

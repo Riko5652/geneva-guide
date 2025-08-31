@@ -66,7 +66,6 @@ function loadAndRenderAllData() {
 function renderAllComponents() {
     if (!currentData) return;
     
-    // Call all rendering functions
     fetchAndRenderWeather();
     renderActivities();
     renderItinerary(); 

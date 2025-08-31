@@ -706,7 +706,9 @@ async function handleUpdateListByTheme() {
 
     try {
         const responseText = await callGeminiWithParts([{ text: prompt }]);
-        const newItems = JSON.parse(responseText);
+        // Clean the response to extract pure JSON
+        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const newItems = JSON.parse(jsonString);
 
         let updatedPackingList = { ...currentData.packingListData };
 
@@ -786,7 +788,9 @@ async function handleFindMoreWithGemini() {
 
     try {
         const responseText = await callGeminiWithParts([{ text: prompt }]);
-        const newActivities = JSON.parse(responseText);
+        // Clean the response to extract pure JSON
+        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const newActivities = JSON.parse(jsonString);
 
         // A quick validation to see if the response is an array
         if (!Array.isArray(newActivities)) {
@@ -1294,4 +1298,5 @@ async function callGeminiWithParts(parts) {
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
 }
+
 

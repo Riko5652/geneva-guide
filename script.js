@@ -304,6 +304,25 @@ async function fetchAndRenderWeather() {
     }
 }
 
+function formatTravelTime(minutes) {
+    if (isNaN(minutes) || minutes === null) return 'לא ידוע';
+    if (minutes < 60) {
+        return `כ-${minutes} דקות`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    let timeString = '';
+    if (hours === 1) {
+        timeString = 'שעה';
+    } else {
+        timeString = `${hours} שעות`;
+    }
+    if (remainingMinutes > 0) {
+        timeString += ` ו-${remainingMinutes} דקות`;
+    }
+    return timeString;
+}
+
 function createActivityCard(activity) {
     const whatToBringList = activity.whatToBring ? `
        <div class="border-t pt-4 mt-4">
@@ -327,7 +346,7 @@ function createActivityCard(activity) {
                    <span class="text-sm font-semibold text-accent py-1 px-2 rounded-full bg-teal-50 mb-3 inline-block">${activity.category}</span>
                    <p class="text-gray-600 mb-4 text-sm">${activity.description}</p>
                    <div class="border-t pt-4 mt-4 space-y-3 text-sm">
-                       <div class="flex items-start"><span class="w-6 text-center mt-1">🕒</span><p><strong>זמן הגעה:</strong> כ-${activity.time || 'לא ידוע'} דקות</p></div>
+                       <div class="flex items-start"><span class="w-6 text-center mt-1">🕒</span><p><strong>זמן הגעה:</strong> ${formatTravelTime(activity.time)}</p></div>
                        <div class="flex items-start"><span class="w-6 text-center mt-1">🚆</span><p><strong>דרך הגעה:</strong> ${activity.transport || 'לא ידוע'}</p></div>
                        <div class="flex items-start"><span class="w-6 text-center mt-1">💰</span><p><strong>עלות:</strong> ${activity.cost}</p></div>
                        <div class="flex items-start"><span class="w-6 text-center mt-1">📍</span><p><strong>כתובת:</strong> ${activity.address}</p></div>
@@ -358,16 +377,19 @@ function getWeatherInfo(code) {
 
 
 function initMap() {
-    if (map) { // If map already exists, just update markers
-        map.eachLayer(layer => {
-            if (!!layer.toGeoJSON) map.removeLayer(layer);
-        });
-    } else { // If map doesn't exist, create it
+    if (map) { 
+        map.invalidateSize();
+    } else { 
         if (!document.getElementById('map') || !L) return;
         map = L.map('map');
     }
 
     if (!currentData.activitiesData) return;
+    
+    // Clear existing layers before adding new ones
+    map.eachLayer(layer => {
+        if (!!layer.toGeoJSON) map.removeLayer(layer);
+    });
     
     const hotelLocation = { lat: 46.2183, lon: 6.0744, name: "Mercure Hotel Meyrin" };
     map.setView([hotelLocation.lat, hotelLocation.lon], 12);
@@ -380,7 +402,7 @@ function initMap() {
 
     currentData.activitiesData.forEach(activity => {
         if (activity.lat && activity.lon) {
-            L.marker([activity.lat, activity.lon], { icon: activityIcon }).addTo(map).bindTooltip(`<b>${activity.name}</b><br>כ-${activity.time} דקות נסיעה מהמלון`);
+            L.marker([activity.lat, activity.lon], { icon: activityIcon }).addTo(map).bindTooltip(`<b>${activity.name}</b><br>${formatTravelTime(activity.time)} נסיעה מהמלון`);
         }
     });
 }
@@ -437,7 +459,7 @@ function createActivitySnippetHTML(activity, dayIndex) {
     return `
        <div class="activity-snippet text-sm text-gray-600 space-y-2">
            <div class="flex items-start"><span class="w-5 text-center">⏰</span><p>${hours}</p></div>
-           <div class="flex items-start"><span class="w-5 text-center">🕒</span><p>כ-${activity.time} דקות</p></div>
+           <div class="flex items-start"><span class="w-5 text-center">🕒</span><p>${formatTravelTime(activity.time)}</p></div>
            <div class="flex items-start"><span class="w-5 text-center">💰</span><p>${activity.cost}</p></div>
            <div class="flex items-start"><span class="w-5 text-center">📍</span><p>${activity.address}</p></div>
            <a href="https://www.google.com/maps/dir/?api=1&destination=${activity.lat},${activity.lon}" target="_blank" class="inline-block text-accent font-semibold hover:underline">פתח ניווט</a>
@@ -476,10 +498,8 @@ function displayDailyAttraction() {
 
 // --- Event Listeners and Modal Logic ---
 function setupEventListeners() {
-    // This function will re-attach listeners. Using a flag to prevent multiple attachments.
     if (document.body.dataset.listenersAttached) return;
 
-    // Mobile Menu
     document.getElementById('menu-btn')?.addEventListener('click', () => {
         document.getElementById('mobile-menu')?.classList.toggle('hidden');
     });
@@ -487,74 +507,40 @@ function setupEventListeners() {
         link.addEventListener('click', () => document.getElementById('mobile-menu')?.classList.add('hidden'));
     });
 
-    // --- Delegated event listeners for the entire body ---
     document.body.addEventListener('click', (e) => {
-        // Modal Openers
-        if (e.target.closest('#open-packing-modal-btn, #open-packing-modal-btn-mobile')) {
-            openModal('packing-guide-modal', setupPackingGuideModal);
-        }
-        if (e.target.closest('#open-integrations-modal-btn, #open-integrations-modal-btn-mobile')) {
-            openModal('integrations-modal');
-        }
-        if (e.target.closest('.nav-gemini-btn')) {
-            openModal('gemini-chat-modal');
-        }
-         if (e.target.closest('#open-flights-modal-btn')) {
-            openModal('flights-details-modal', populateFlightDetails);
-        }
-         if (e.target.closest('#open-hotel-modal-btn')) {
-            openModal('hotel-booking-modal', populateHotelDetails);
-        }
-        if (e.target.closest('.nav-family-btn')) {
-            openModal('family-details-modal', populateFamilyDetails);
-        }
-         if (e.target.closest('#find-nearby-btn')) {
-            openModal('nearby-modal', findAndDisplayNearby);
-        }
-        
-        // Specific Button Clicks
+        if (e.target.closest('#open-packing-modal-btn, #open-packing-modal-btn-mobile')) openModal('packing-guide-modal', setupPackingGuideModal);
+        if (e.target.closest('#open-integrations-modal-btn, #open-integrations-modal-btn-mobile')) openModal('integrations-modal');
+        if (e.target.closest('.nav-gemini-btn')) openModal('gemini-chat-modal');
+        if (e.target.closest('#open-flights-modal-btn')) openModal('flights-details-modal', populateFlightDetails);
+        if (e.target.closest('#open-hotel-modal-btn')) openModal('hotel-booking-modal', populateHotelDetails);
+        if (e.target.closest('.nav-family-btn')) openModal('family-details-modal', populateFamilyDetails);
+        if (e.target.closest('#find-nearby-btn')) openModal('nearby-modal', findAndDisplayNearby);
         if (e.target.id === 'load-more-btn') handleLoadMore();
         if (e.target.id === 'image-upload-btn') document.getElementById('image-upload-input').click();
         if (e.target.id === 'bulletin-post-btn') handlePostBulletinMessage();
         if (e.target.id === 'add-expense-btn') handleAddExpense();
         if (e.target.id === 'add-item-btn') handleAddPackingItem();
         if (e.target.id === 'update-list-by-theme-btn') handleUpdateListByTheme();
-        if (e.target.id === 'get-packing-suggestion-btn') handlePackingSuggestion();
-        if (e.target.id === 'download-suggestion-btn') handleDownloadSuggestion();
+        if (e.target.id === 'recalculate-packing-plan-btn') handleRecalculatePackingPlan();
         if (e.target.id === 'share-whatsapp-btn') handleShareWhatsApp();
         if (e.target.id === 'add-to-calendar-btn') handleAddToCalendar();
         if (e.target.id === 'add-luggage-btn') handleAddLuggage();
-        if (e.target.id === 'recalculate-packing-plan-btn') handleRecalculatePackingPlan();
-
-        // Carousel Navigation
         if (e.target.closest('#carousel-next')) handleCarousel('next');
         if (e.target.closest('#carousel-prev')) handleCarousel('prev');
-
-        // Itinerary Actions
         if (e.target.closest('.swap-activity-btn')) handleSwapActivity(e.target.closest('.swap-activity-btn'));
-        
-        // Boarding Pass
         if (e.target.id === 'show-boarding-passes-btn') showBoardingPasses();
-
-
-        // Modal Closers
-        if (e.target.closest('.modal-close-btn')) {
-            e.target.closest('.modal').classList.add('hidden');
-            e.target.closest('.modal').classList.remove('flex');
-        }
+        if (e.target.closest('.modal-close-btn')) e.target.closest('.modal').classList.add('hidden');
     });
 
-    // --- Direct Listeners for specific elements ---
     document.getElementById('image-upload-input')?.addEventListener('change', handleImageUpload);
     document.getElementById('currency-chf')?.addEventListener('input', handleCurrencyConversion);
     
-    // Filter Buttons
     document.querySelectorAll('.btn-filter[data-filter]').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.btn-filter[data-filter]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             currentCategoryFilter = button.dataset.filter;
-            displayedActivitiesCount = 6; // Reset count on filter change
+            displayedActivitiesCount = 6;
             renderActivities();
         });
     });
@@ -564,11 +550,10 @@ function setupEventListeners() {
             document.querySelectorAll('.btn-filter[data-time-filter]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             currentTimeFilter = button.dataset.timeFilter;
-            displayedActivitiesCount = 6; // Reset count on filter change
+            displayedActivitiesCount = 6;
             renderActivities();
         });
     });
-
 
     document.body.dataset.listenersAttached = 'true';
 }
@@ -585,75 +570,47 @@ function openModal(modalId, onOpenCallback) {
 
 function setupPackingGuideModal() {
     if (!currentData) return;
-
     renderChecklist();
-    renderLuggageManagement();
-    
+    renderLuggage();
     const categorySelect = document.getElementById('new-item-category-select');
     categorySelect.innerHTML = Object.keys(currentData.packingListData).map(cat => `<option value="${cat}">${cat}</option>`).join('');
-
-    const modal = document.getElementById('packing-guide-modal');
-    modal.querySelectorAll('.accordion-button').forEach(button => {
-        if (!button.dataset.listenerAttached) {
-            button.addEventListener('click', () => {
-                const content = button.nextElementSibling;
-                button.classList.toggle('open');
-                content.style.maxHeight = content.style.maxHeight ? null : `${content.scrollHeight}px`;
-            });
-            button.dataset.listenerAttached = 'true';
-        }
-    });
-    
     updatePackingProgress();
 }
 
 function renderChecklist() {
     const container = document.getElementById('checklist-container');
     if (!container || !currentData.packingListData) return;
-    let html = '';
-    for (const category in currentData.packingListData) {
-        if (Array.isArray(currentData.packingListData[category])) {
-            html += `<div class="mb-4">
-                <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
-                <div class="space-y-2">
-                    ${currentData.packingListData[category].map(item => `
-                        <label class="flex items-center justify-between">
-                            <span>
-                                <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-name="${item.name}">
-                                <span class="mr-3 text-gray-700">${item.name}</span>
-                            </span>
-                            <button class="remove-item-btn text-red-400 hover:text-red-600" data-category="${category}" data-name="${item.name}"><i class="fas fa-trash-alt"></i></button>
-                        </label>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-    }
-    container.innerHTML = html;
+    container.innerHTML = Object.entries(currentData.packingListData).map(([category, items]) => `
+        <div class="mb-4">
+            <h4 class="font-bold text-lg mb-2 text-accent">${category}</h4>
+            <div class="space-y-2">
+                ${items.map(item => `
+                    <label class="flex items-center justify-between">
+                        <span>
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-teal-600 rounded" ${item.checked ? 'checked' : ''} data-category="${category}" data-name="${item.name}">
+                            <span class="mr-3 text-gray-700">${item.name}</span>
+                        </span>
+                        <button class="remove-item-btn text-red-400 hover:text-red-600" data-category="${category}" data-name="${item.name}"><i class="fas fa-trash-alt"></i></button>
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
 
-    // Add event listeners after rendering
-    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', handleChecklistItemToggle);
-    });
-    container.querySelectorAll('.remove-item-btn').forEach(button => {
-        button.addEventListener('click', handleRemovePackingItem);
-    });
+    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.addEventListener('change', handleChecklistItemToggle));
+    container.querySelectorAll('.remove-item-btn').forEach(button => button.addEventListener('click', handleRemovePackingItem));
 }
 
 async function handleChecklistItemToggle(event) {
     const { category, name } = event.target.dataset;
     const isChecked = event.target.checked;
     
-    const categoryItems = currentData.packingListData[category];
-    if (categoryItems) {
-        const itemToUpdate = categoryItems.find(i => i.name === name);
-        if (itemToUpdate) {
-            itemToUpdate.checked = isChecked;
-            const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-            // Use dot notation for nested field update
-            await updateDoc(docRef, { [`packingListData.${category}`]: categoryItems });
-        }
-    }
+    const categoryItems = currentData.packingListData[category].map(item => 
+        item.name === name ? { ...item, checked: isChecked } : item
+    );
+
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    await updateDoc(docRef, { [`packingListData.${category}`]: categoryItems });
 }
 
 async function handleAddPackingItem() {
@@ -663,32 +620,21 @@ async function handleAddPackingItem() {
     const category = categorySelect.value;
 
     if (!newItemName || !category) return;
-
     const newItem = { name: newItemName, checked: false };
-    
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    await updateDoc(docRef, {
-        [`packingListData.${category}`]: arrayUnion(newItem)
-    });
-
+    await updateDoc(docRef, { [`packingListData.${category}`]: arrayUnion(newItem) });
     input.value = '';
 }
 
 async function handleRemovePackingItem(event) {
     const { category, name } = event.currentTarget.dataset;
-    
-    // Create representations of the item in both checked and unchecked states
-    const itemToRemoveUnchecked = { name: name, checked: false };
-    const itemToRemoveChecked = { name: name, checked: true };
+    const itemToRemoveUnchecked = { name, checked: false };
+    const itemToRemoveChecked = { name, checked: true };
 
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    
-    // Firestore's arrayRemove needs the exact object. Since we don't know its checked state,
-    // we perform two separate updates. One will succeed, the other will do nothing.
     await updateDoc(docRef, { [`packingListData.${category}`]: arrayRemove(itemToRemoveUnchecked) });
     await updateDoc(docRef, { [`packingListData.${category}`]: arrayRemove(itemToRemoveChecked) });
 }
-
 
 async function handleUpdateListByTheme() {
     const input = document.getElementById('theme-input');
@@ -698,27 +644,20 @@ async function handleUpdateListByTheme() {
     showTextResponseModal("עדכון רשימה חכם", '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>');
     
     const existingList = JSON.stringify(currentData.packingListData);
-    const prompt = `Based on the following existing packing list (JSON format), please suggest a list of additional items to pack for a family with toddlers for a trip to Geneva, focusing on the theme: "${theme}". Please provide ONLY a JSON object as a response, where keys are categories and values are arrays of item names (strings). Do not include items that are already on the list.
-    
-    Existing List:
-    ${existingList}
-
+    const prompt = `Based on the following existing packing list (JSON format), suggest additional items for a family with toddlers for a trip to Geneva, focusing on the theme: "${theme}". Provide ONLY a JSON object as a response, where keys are categories and values are arrays of item names (strings). Do not include items already on the list.
+    Existing List: ${existingList}
     Format your response strictly as a JSON object, like this: {"Category Name": ["item1", "item2"]}.`;
 
     try {
-        const responseText = await callGeminiWithParts([{ text: prompt }]);
-        // Clean the response to extract pure JSON
-        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const newItems = JSON.parse(jsonString);
+        let responseText = await callGeminiWithParts([{ text: prompt }]);
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const newItems = JSON.parse(responseText);
 
         let updatedPackingList = { ...currentData.packingListData };
 
         for (const category in newItems) {
-            if (!updatedPackingList[category]) {
-                updatedPackingList[category] = [];
-            }
+            if (!updatedPackingList[category]) updatedPackingList[category] = [];
             newItems[category].forEach(itemName => {
-                // Avoid adding duplicates
                 if (!updatedPackingList[category].some(item => item.name === itemName)) {
                     updatedPackingList[category].push({ name: itemName, checked: false });
                 }
@@ -737,21 +676,16 @@ async function handleUpdateListByTheme() {
     }
 }
 
-
 function updatePackingProgress() {
     if (!currentData.packingListData) return;
     const progressBar = document.getElementById('packingProgressBar');
     if (!progressBar) return;
-    let total = 0;
-    let checked = 0;
-    for (const category in currentData.packingListData) {
-        if (Array.isArray(currentData.packingListData[category])) {
-            total += currentData.packingListData[category].length;
-            checked += currentData.packingListData[category].filter(item => item.checked).length;
-        }
-    }
-    const percentage = total > 0 ? (checked / total) * 100 : 0;
-    progressBar.style.width = percentage + '%';
+    let total = 0, checked = 0;
+    Object.values(currentData.packingListData).forEach(arr => {
+        total += arr.length;
+        checked += arr.filter(item => item.checked).length;
+    });
+    progressBar.style.width = (total > 0 ? (checked / total) * 100 : 0) + '%';
 }
 
 function handleLoadMore() {
@@ -759,14 +693,7 @@ function handleLoadMore() {
     const filteredActivities = currentData.activitiesData.filter(activity => {
         if (activity.category === 'בית מרקחת') return false;
         const categoryMatch = currentCategoryFilter === 'all' || activity.category === currentCategoryFilter;
-        let timeMatch = false;
-        if (currentTimeFilter === 'all') { timeMatch = true; }
-        else {
-            const time = parseInt(currentTimeFilter);
-            if (time === 20) timeMatch = activity.time <= 20;
-            else if (time === 40) timeMatch = activity.time > 20 && activity.time <= 40;
-            else if (time === 60) timeMatch = activity.time > 40;
-        }
+        let timeMatch = currentTimeFilter === 'all' || (currentTimeFilter === '20' && activity.time <= 20) || (currentTimeFilter === '40' && activity.time > 20 && activity.time <= 40) || (currentTimeFilter === '60' && activity.time > 40);
         return categoryMatch && timeMatch;
     });
 
@@ -781,36 +708,33 @@ function handleLoadMore() {
 }
 
 async function handleFindMoreWithGemini() {
-    const prompt = `Please suggest 3 more fun activities for a family with toddlers in or very near Geneva, Switzerland. They should be similar to the types of activities already on this list, but not duplicates. Provide ONLY a JSON array of objects in your response, with no other text. Each object must have these exact keys: "id", "name", "category", "time", "transport", "address", "description", "image", "link", "lat", "lon", "cost". For the "image", use a relevant placeholder URL from placehold.co.
+    const prompt = `Please suggest 3 more fun activities for a family with toddlers in or very near Geneva, Switzerland. They should be similar to the types of activities already on this list, but not duplicates. Provide ONLY a JSON array of objects in your response, with no other text. Each object must have these exact keys: "id", "name", "category", "time", "transport", "address", "description", "image", "link", "lat", "lon", "cost", "whatToBring", "openingHours".
     
+    IMPORTANT RULES:
+    1.  All textual fields ("name", "category", "transport", "address", "description", "cost", "whatToBring" items) MUST be in HEBREW.
+    2.  For the "image" key, try to find a real, publicly accessible image URL. If you cannot find one, use a descriptive Unsplash URL like 'https://source.unsplash.com/400x300/?geneva,park'.
+    3.  "id" should be a new unique number, higher than any existing id. The highest current ID is ${Math.max(...currentData.activitiesData.map(a => a.id))}.
+    4.  "whatToBring" must be an array of strings in HEBREW.
+    5.  "openingHours" must be an object.
+
     Existing activities to avoid duplicating:
     ${JSON.stringify(currentData.activitiesData.map(a => a.name))}
     `;
 
     try {
-        const responseText = await callGeminiWithParts([{ text: prompt }]);
-        // Clean the response to extract pure JSON
-        const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const newActivities = JSON.parse(jsonString);
-
-        // A quick validation to see if the response is an array
-        if (!Array.isArray(newActivities)) {
-            throw new Error("Gemini did not return a valid array.");
-        }
-
-        // Add new activities to the main data object
+        let responseText = await callGeminiWithParts([{ text: prompt }]);
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const newActivities = JSON.parse(responseText);
+        if (!Array.isArray(newActivities)) throw new Error("Gemini did not return a valid array.");
+        
         const updatedActivities = [...currentData.activitiesData, ...newActivities];
-
-        // Update Firestore
         const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
         await updateDoc(docRef, { activitiesData: updatedActivities });
         
-        // After updating, reset the view to show the new items
         displayedActivitiesCount = updatedActivities.length;
-        // The onSnapshot listener will automatically call renderActivities
 
     } catch (error) {
-        console.error("Error finding more activities with Gemini:", error);
+        console.error("Error finding more activities with Gemini:", error, responseText);
         alert("לא הצלחנו למצוא פעילויות נוספות כרגע, נסה שוב מאוחר יותר.");
         const loadMoreBtn = document.getElementById('load-more-btn');
         loadMoreBtn.textContent = 'מצא הצעות נוספות עם AI ✨';
@@ -818,47 +742,28 @@ async function handleFindMoreWithGemini() {
     }
 }
 
-
 function handleCarousel(direction) {
     const carouselInner = document.getElementById('carousel-inner');
-    const totalImages = currentData.photoAlbum.length;
-    if (totalImages === 0) return;
-    
+    const totalImages = currentData.photoAlbum ? currentData.photoAlbum.length : 0;
+    if (totalImages <= 1) return;
     const currentTransform = new DOMMatrix(getComputedStyle(carouselInner).transform);
     const currentOffset = currentTransform.m41;
     const imageWidth = carouselInner.clientWidth;
-
-    let newIndex;
     const currentIndex = Math.round(Math.abs(currentOffset) / imageWidth);
-
-    if (direction === 'next') {
-        newIndex = (currentIndex + 1) % totalImages;
-    } else {
-        newIndex = (currentIndex - 1 + totalImages) % totalImages;
-    }
-    
+    let newIndex = direction === 'next' ? (currentIndex + 1) % totalImages : (currentIndex - 1 + totalImages) % totalImages;
     carouselInner.style.transform = `translateX(-${newIndex * 100}%)`;
 }
-
 
 async function handleImageUpload(event) {
     const files = event.target.files;
     if (!files.length) return;
-
     alert(`מעלה ${files.length} תמונות...`);
-
     for (const file of files) {
         const timestamp = Date.now();
         const storageRef = ref(storage, `trip-photos/${timestamp}-${file.name}`);
-        
         await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(storageRef);
-
-        const newPhoto = {
-            url: downloadURL,
-            uploadedAt: timestamp
-        };
-        
+        const newPhoto = { url: downloadURL, uploadedAt: timestamp };
         const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
         await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
     }
@@ -869,82 +774,46 @@ async function handlePostBulletinMessage() {
     const input = document.getElementById('bulletin-input');
     const text = input.value.trim();
     if (!text) return;
-
-    const newMessage = {
-        text: text,
-        timestamp: Date.now() // Use client-side timestamp for immediate sorting
-    };
-
+    const newMessage = { text, timestamp: Date.now() };
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
     await updateDoc(docRef, { bulletinBoard: arrayUnion(newMessage) });
-    
     input.value = '';
 }
 
 async function handleAddExpense() {
     const descInput = document.getElementById('expense-desc');
     const amountInput = document.getElementById('expense-amount');
-    const categorySelect = document.getElementById('expense-category');
-    
-    const desc = descInput.value.trim();
-    const amount = amountInput.value.trim();
-    const category = "General"; // Assuming a general category for now
-    
-    if (!desc || !amount) return;
-
-    const newExpense = {
-        desc,
-        amount: parseFloat(amount),
-        category,
-        timestamp: Date.now()
-    };
-    
+    if (!descInput.value.trim() || !amountInput.value.trim()) return;
+    const newExpense = { desc: descInput.value.trim(), amount: parseFloat(amountInput.value), timestamp: Date.now() };
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
     await updateDoc(docRef, { expenses: arrayUnion(newExpense) });
-    
-    descInput.value = '';
-    amountInput.value = '';
+    descInput.value = ''; amountInput.value = '';
 }
 
 function handleCurrencyConversion(event) {
-    const chfValue = event.target.value;
-    const ilsInput = document.getElementById('currency-ils');
-    const ILS_RATE = 4.1; // Approximate rate
-    ilsInput.value = (chfValue * ILS_RATE).toFixed(2);
+    document.getElementById('currency-ils').value = (event.target.value * 4.1).toFixed(2);
 }
 
 function handleShareWhatsApp() {
-    const text = encodeURIComponent(`היי! בואו תראו את תכנון הטיול שלנו לז'נבה: ${window.location.href}`);
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`היי! בואו תראו את תכנון הטיול שלנו לז'נבה: ${window.location.href}`)}`, '_blank');
 }
 
 function handleAddToCalendar() {
-    const title = encodeURIComponent("טיול משפחתי לז'נבה");
-    const startDate = "20250824";
-    const endDate = "20250830"; // Note: End date for Google Calendar is exclusive
-    const details = encodeURIComponent(`קישור למדריך הטיול האינטראקטיבי: ${window.location.href}`);
-    const location = encodeURIComponent("Geneva, Switzerland");
-    
-    const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
-    
+    const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("טיול משפחתי לז'נבה")}&dates=20250824/20250830&details=${encodeURIComponent(`קישור למדריך: ${window.location.href}`)}&location=${encodeURIComponent("Geneva, Switzerland")}`;
     window.open(googleCalendarUrl, '_blank');
 }
 
-
-function renderLuggageManagement() {
+function renderLuggage() {
     const container = document.getElementById('luggage-list-container');
     if (!container || !currentData.luggageData) return;
     container.innerHTML = currentData.luggageData.map((item, index) => `
-        <div class="bg-secondary p-4 rounded-lg flex justify-between items-start">
+        <div class="bg-secondary p-4 rounded-lg flex justify-between items-center">
             <div>
                 <h4 class="font-bold text-lg">${item.name}</h4>
                 <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
-                 ${item.weight ? `<p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>` : ''}
-                 ${item.notes ? `<p class="text-sm mt-1"><em>${item.notes}</em></p>` : ''}
             </div>
             <button class="remove-luggage-btn text-red-400 hover:text-red-600" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
-        </div>
-    `).join('');
+        </div>`).join('');
 
     container.querySelectorAll('.remove-luggage-btn').forEach(button => {
         button.addEventListener('click', handleRemoveLuggage);
@@ -956,84 +825,22 @@ async function handleAddLuggage() {
     const ownerInput = document.getElementById('new-luggage-owner');
     const name = nameInput.value.trim();
     const owner = ownerInput.value.trim();
-
-    if (!name || !owner) {
-        alert("אנא מלאו שם ואחראי עבור המזוודה.");
-        return;
-    }
-
-    const newLuggage = { name, owner, weight: "", notes: "" };
-    
+    if (!name || !owner) return;
+    const newLuggage = { name, owner };
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-    await updateDoc(docRef, {
-        luggageData: arrayUnion(newLuggage)
-    });
-
+    await updateDoc(docRef, { luggageData: arrayUnion(newLuggage) });
     nameInput.value = '';
     ownerInput.value = '';
 }
 
 async function handleRemoveLuggage(event) {
     const indexToRemove = parseInt(event.currentTarget.dataset.index, 10);
-    const luggageToRemove = currentData.luggageData[indexToRemove];
-
-    if (luggageToRemove) {
+    const itemToRemove = currentData.luggageData[indexToRemove];
+    if (itemToRemove) {
         const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-        await updateDoc(docRef, {
-            luggageData: arrayRemove(luggageToRemove)
-        });
+        await updateDoc(docRef, { luggageData: arrayRemove(itemToRemove) });
     }
 }
-
-
-async function handleRecalculatePackingPlan() {
-    const resultContainer = document.getElementById('packing-suggestion-result');
-    resultContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
-
-    const itemsToPack = [];
-    for (const category in currentData.packingListData) {
-        currentData.packingListData[category].forEach(item => {
-            if (item.checked) {
-                itemsToPack.push(item.name);
-            }
-        });
-    }
-
-    const availableLuggage = JSON.stringify(currentData.luggageData);
-
-    const prompt = `
-        You are an expert packing assistant. Your task is to create an optimal packing plan for a family.
-        Given the following list of items to pack and the available luggage, please suggest where to put each item.
-        Organize the response by luggage item. Be smart about it - group similar items, and consider what needs to be easily accessible (like documents, snacks for kids).
-        The response should be in Hebrew.
-
-        Items to pack: ${itemsToPack.join(', ')}
-        Available luggage: ${availableLuggage}
-
-        Please format the response clearly, for example:
-        
-        ### מזוודה גדולה
-        - בגדים של כולם
-        - נעליים
-        
-        ### תיק גב עדי
-        - חיתולים ומגבונים
-        - חטיפים
-        - מסמכים
-    `;
-
-    try {
-        const responseText = await callGeminiWithParts([{ text: prompt }]);
-        resultContainer.innerHTML = responseText.replace(/\n/g, '<br>');
-
-    } catch (error) {
-        console.error("Error recalculating packing plan:", error);
-        resultContainer.innerHTML = '<p class="text-red-500">שגיאה בחישוב תכנית האריזה. נסה שוב.</p>';
-    }
-}
-
-
-// --- MODAL POPULATION FUNCTIONS ---
 
 function populateHotelDetails() {
     if (!currentData || !currentData.hotelData) return;
@@ -1232,9 +1039,38 @@ function findAndDisplayNearby() {
 }
 
 // --- GEMINI & AI CALLS ---
+async function handleRecalculatePackingPlan() {
+    const resultContainer = document.getElementById('packing-suggestion-result');
+    resultContainer.innerHTML = '<div class="flex justify-center"><div class="loader"></div></div>';
+    
+    const packingList = JSON.stringify(currentData.packingListData);
+    const luggageList = JSON.stringify(currentData.luggageData);
+    
+    const prompt = `You are an expert packing assistant. Based on the following packing list of items and the available luggage, create an optimal packing plan for a family. Assign each category of items to the most suitable bag. 
+    
+    Item List (JSON): ${packingList}
+    Available Luggage (JSON): ${luggageList}
+    
+    Please provide the response in Hebrew, formatted clearly with Markdown, indicating which items go into which bag. For example:
+    
+    ### מזוודה גדולה
+    - ביגוד (מבוגרים)
+    - ביגוד (ילדים)
+    
+    ### תיק עלייה למטוס
+    - מסמכים וכסף
+    - אלקטרוניקה
+    `;
+    
+    try {
+        const response = await callGeminiWithParts([{ text: prompt }]);
+        resultContainer.innerHTML = response.replace(/\n/g, '<br>'); // Simple markdown to HTML
+    } catch (error) {
+        console.error("Error recalculating packing plan:", error);
+        resultContainer.innerHTML = '<p class="text-red-500">שגיאה ביצירת תכנית האריזה. נסה שוב.</p>';
+    }
+}
 
-function setupPackingAssistant() { /* ... Logic for packing assistant ... */ }
-async function handlePackingSuggestion() { /* ... Logic to handle suggestion request ... */ }
 
 async function handlePlanRequest(event) {
     const button = event.target.closest('button');
@@ -1301,24 +1137,20 @@ async function handleCustomPlanRequest() { /* ... */ }
 async function handleChatSend() { /* ... */ }
 function handleChatImageUpload(event) { /* ... */ }
 function removeChatImage() { /* ... */ }
-function handleDownloadSuggestion() { /* ... */ }
+
 async function handleSwapActivity(button) {
     const { dayIndex, planType, itemIndex } = button.dataset;
 
     const day = currentData.itineraryData.find(d => d.dayIndex == dayIndex);
     if (!day || !day[planType]) return;
 
-    // Find all activities already planned for this day to avoid duplicates
     let plannedActivityIds = [];
-    currentData.itineraryData[dayIndex - 1].mainPlan.items.forEach(i => plannedActivityIds.push(i.activityId));
-    if (currentData.itineraryData[dayIndex - 1].alternativePlan) {
-        currentData.itineraryData[dayIndex - 1].alternativePlan.items.forEach(i => plannedActivityIds.push(i.activityId));
-    }
-    if (currentData.itineraryData[dayIndex - 1].alternativePlan2) {
-        currentData.itineraryData[dayIndex - 1].alternativePlan2.items.forEach(i => plannedActivityIds.push(i.activityId));
-    }
-
-    // Find a new random activity that isn't already planned
+    currentData.itineraryData.forEach(dayItin => {
+        if(dayItin.mainPlan && dayItin.mainPlan.items) dayItin.mainPlan.items.forEach(i => plannedActivityIds.push(i.activityId));
+        if(dayItin.alternativePlan && dayItin.alternativePlan.items) dayItin.alternativePlan.items.forEach(i => plannedActivityIds.push(i.activityId));
+        if(dayItin.alternativePlan2 && dayItin.alternativePlan2.items) dayItin.alternativePlan2.items.forEach(i => plannedActivityIds.push(i.activityId));
+    });
+    
     const availableActivities = currentData.activitiesData.filter(a => !plannedActivityIds.includes(a.id) && a.category !== 'בית מרקחת');
     
     if (availableActivities.length === 0) {
@@ -1326,32 +1158,27 @@ async function handleSwapActivity(button) {
         return;
     }
 
-    // Build and show the swap modal
     const swapList = document.getElementById('swap-activity-list');
     swapList.innerHTML = availableActivities.map(act => `
         <button class="w-full text-right p-3 bg-gray-100 hover:bg-teal-100 rounded-md" data-new-activity-id="${act.id}">
-            <strong class="text-accent">${act.name}</strong> (${act.category}) - ${act.time} דקות
+            <strong class="text-accent">${act.name}</strong> (${act.category}) - ${formatTravelTime(act.time)}
         </button>
     `).join('');
     
-    // Add listeners to the new buttons
     swapList.querySelectorAll('button').forEach(swapButton => {
         swapButton.addEventListener('click', async () => {
             const newActivityId = parseInt(swapButton.dataset.newActivityId);
             const newActivity = currentData.activitiesData.find(a => a.id === newActivityId);
 
-            // Update the local data structure
-            const updatedItinerary = JSON.parse(JSON.stringify(currentData.itineraryData)); // Deep copy
+            const updatedItinerary = JSON.parse(JSON.stringify(currentData.itineraryData)); 
             updatedItinerary[dayIndex - 1][planType].items[itemIndex] = {
                 activityId: newActivity.id,
                 description: newActivity.description
             };
 
-            // Update Firestore
             const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
             await updateDoc(docRef, { itineraryData: updatedItinerary });
 
-            // Close modal
             document.getElementById('swap-activity-modal').classList.add('hidden');
         });
     });
@@ -1373,12 +1200,10 @@ async function callGeminiWithParts(parts) {
             throw new Error(`API error: ${response.status} ${errorText}`);
         }
         const result = await response.json();
-        // **FIX:** Safely access the text part of the response
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
             return text;
         } else {
-            // Log the problematic response for debugging
             console.error("Unexpected Gemini response structure:", result);
             return "מצטער, קיבלתי תשובה בפורמט לא צפוי.";
         }
@@ -1387,4 +1212,3 @@ async function callGeminiWithParts(parts) {
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
 }
-

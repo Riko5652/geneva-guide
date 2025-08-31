@@ -167,26 +167,8 @@ section {
     white-space: pre-wrap;
 }
 
-.accordion-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-}
-
-.accordion-button.open .accordion-arrow {
-    transform: rotate(180deg);
-}
-
 .progress-bar-fill {
     transition: width 0.5s ease-in-out;
-}
-
-#map {
-    height: 500px;
-    width: 100%;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    border: 1px solid #ddd;
 }
 
 .boarding-pass-wallet {
@@ -300,5 +282,10 @@ section {
 .tool-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* z-index fix for map and modals */
+.leaflet-container {
+    z-index: 0;
 }
 

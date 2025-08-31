@@ -523,6 +523,8 @@ function setupEventListeners() {
         if (e.target.id === 'download-suggestion-btn') handleDownloadSuggestion();
         if (e.target.id === 'share-whatsapp-btn') handleShareWhatsApp();
         if (e.target.id === 'add-to-calendar-btn') handleAddToCalendar();
+        if (e.target.id === 'add-luggage-btn') handleAddLuggage();
+        if (e.target.id === 'recalculate-packing-plan-btn') handleRecalculatePackingPlan();
 
         // Carousel Navigation
         if (e.target.closest('#carousel-next')) handleCarousel('next');
@@ -585,7 +587,7 @@ function setupPackingGuideModal() {
     if (!currentData) return;
 
     renderChecklist();
-    renderLuggage();
+    renderLuggageManagement();
     
     const categorySelect = document.getElementById('new-item-category-select');
     categorySelect.innerHTML = Object.keys(currentData.packingListData).map(cat => `<option value="${cat}">${cat}</option>`).join('');
@@ -603,7 +605,6 @@ function setupPackingGuideModal() {
     });
     
     updatePackingProgress();
-    setupPackingAssistant();
 }
 
 function renderChecklist() {
@@ -774,7 +775,7 @@ function handleLoadMore() {
         renderActivities();
     } else {
         loadMoreBtn.disabled = true;
-        loadMoreBtn.innerHTML = '<div class="loader"></div>';
+        loadMoreBtn.innerHTML = '<div class="loader mx-auto"></div>';
         handleFindMoreWithGemini();
     }
 }
@@ -887,7 +888,7 @@ async function handleAddExpense() {
     
     const desc = descInput.value.trim();
     const amount = amountInput.value.trim();
-    const category = categorySelect.value;
+    const category = "General"; // Assuming a general category for now
     
     if (!desc || !amount) return;
 
@@ -930,17 +931,105 @@ function handleAddToCalendar() {
 }
 
 
-function renderLuggage() {
+function renderLuggageManagement() {
     const container = document.getElementById('luggage-list-container');
     if (!container || !currentData.luggageData) return;
-    container.innerHTML = currentData.luggageData.map(item => `
-        <div class="bg-secondary p-4 rounded-lg">
-            <h4 class="font-bold text-lg">${item.name}</h4>
-            <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
-            <p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>
-            <p class="text-sm mt-1"><em>${item.notes}</em></p>
+    container.innerHTML = currentData.luggageData.map((item, index) => `
+        <div class="bg-secondary p-4 rounded-lg flex justify-between items-start">
+            <div>
+                <h4 class="font-bold text-lg">${item.name}</h4>
+                <p class="text-sm"><strong>אחראי/ת:</strong> ${item.owner}</p>
+                 ${item.weight ? `<p class="text-sm"><strong>משקל:</strong> ${item.weight}</p>` : ''}
+                 ${item.notes ? `<p class="text-sm mt-1"><em>${item.notes}</em></p>` : ''}
+            </div>
+            <button class="remove-luggage-btn text-red-400 hover:text-red-600" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
         </div>
     `).join('');
+
+    container.querySelectorAll('.remove-luggage-btn').forEach(button => {
+        button.addEventListener('click', handleRemoveLuggage);
+    });
+}
+
+async function handleAddLuggage() {
+    const nameInput = document.getElementById('new-luggage-name');
+    const ownerInput = document.getElementById('new-luggage-owner');
+    const name = nameInput.value.trim();
+    const owner = ownerInput.value.trim();
+
+    if (!name || !owner) {
+        alert("אנא מלאו שם ואחראי עבור המזוודה.");
+        return;
+    }
+
+    const newLuggage = { name, owner, weight: "", notes: "" };
+    
+    const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+    await updateDoc(docRef, {
+        luggageData: arrayUnion(newLuggage)
+    });
+
+    nameInput.value = '';
+    ownerInput.value = '';
+}
+
+async function handleRemoveLuggage(event) {
+    const indexToRemove = parseInt(event.currentTarget.dataset.index, 10);
+    const luggageToRemove = currentData.luggageData[indexToRemove];
+
+    if (luggageToRemove) {
+        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+        await updateDoc(docRef, {
+            luggageData: arrayRemove(luggageToRemove)
+        });
+    }
+}
+
+
+async function handleRecalculatePackingPlan() {
+    const resultContainer = document.getElementById('packing-suggestion-result');
+    resultContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
+
+    const itemsToPack = [];
+    for (const category in currentData.packingListData) {
+        currentData.packingListData[category].forEach(item => {
+            if (item.checked) {
+                itemsToPack.push(item.name);
+            }
+        });
+    }
+
+    const availableLuggage = JSON.stringify(currentData.luggageData);
+
+    const prompt = `
+        You are an expert packing assistant. Your task is to create an optimal packing plan for a family.
+        Given the following list of items to pack and the available luggage, please suggest where to put each item.
+        Organize the response by luggage item. Be smart about it - group similar items, and consider what needs to be easily accessible (like documents, snacks for kids).
+        The response should be in Hebrew.
+
+        Items to pack: ${itemsToPack.join(', ')}
+        Available luggage: ${availableLuggage}
+
+        Please format the response clearly, for example:
+        
+        ### מזוודה גדולה
+        - בגדים של כולם
+        - נעליים
+        
+        ### תיק גב עדי
+        - חיתולים ומגבונים
+        - חטיפים
+        - מסמכים
+    `;
+
+    try {
+        const responseText = await callGeminiWithParts([{ text: prompt }]);
+        resultContainer.innerHTML = responseText.replace(/\n/g, '<br>');
+
+    } catch (error) {
+        console.error("Error recalculating packing plan:", error);
+        resultContainer.innerHTML = '<p class="text-red-500">שגיאה בחישוב תכנית האריזה. נסה שוב.</p>';
+    }
 }
 
 
@@ -1298,5 +1387,4 @@ async function callGeminiWithParts(parts) {
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
 }
-
 

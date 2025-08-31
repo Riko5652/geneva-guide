@@ -56,7 +56,7 @@ function loadAndRenderAllData() {
         if (docSnap.exists()) {
             currentData = docSnap.data();
 
-            // **CHANGE**: Load AI-generated activities from localStorage for the current session
+            // Load AI-generated activities from localStorage for the current session
             const storedAiActivities = JSON.parse(localStorage.getItem('ai_added_activities'));
             if (storedAiActivities && Array.isArray(storedAiActivities)) {
                 const existingIds = new Set(currentData.activitiesData.map(a => a.id));
@@ -322,7 +322,6 @@ function createActivityCard(activity) {
            </ul>
        </div>` : '';
 
-    // **CHANGE**: Ensure image URL is handled gracefully, even if empty string from AI
     const imageUrl = activity.image || `https://placehold.co/600x400/e2e8f0/94a3b8?text=${encodeURIComponent(activity.name)}`;
 
     return `
@@ -533,15 +532,19 @@ function setupEventListeners() {
         if (e.target.closest('#carousel-prev')) handleCarousel('prev');
         if (e.target.closest('.swap-activity-btn')) handleSwapActivity(e.target.closest('.swap-activity-btn'));
         if (e.target.id === 'show-boarding-passes-btn') showBoardingPasses();
+        
+        // Itinerary AI buttons
+        if (e.target.closest('.gemini-plan-btn')) handlePlanRequest(e);
+        if (e.target.closest('.gemini-summary-btn')) handleSummaryRequest(e);
+        if (e.target.closest('.gemini-story-btn')) handleStoryRequest(e);
+
         if (e.target.closest('.modal-close-btn')) {
             e.target.closest('.modal').classList.add('hidden');
             e.target.closest('.modal').classList.remove('flex');
         }
-        // **CHANGE**: Listener for visual packing guide upload button
         if (e.target.closest('.upload-item-image-btn')) {
             e.target.closest('.visual-packing-item').querySelector('.item-image-input').click();
         }
-        // **CHANGE**: Listener for visual packing item removal
         if (e.target.closest('.remove-item-btn')) {
              handleRemovePackingItem(e.target.closest('.remove-item-btn'));
         }
@@ -570,7 +573,6 @@ function setupEventListeners() {
         });
     });
 
-    // **CHANGE**: Delegated listener for visual packing image inputs
     document.getElementById('packing-guide-modal')?.addEventListener('change', e => {
         if (e.target.classList.contains('item-image-input')) {
             handlePackingItemImageUpload(e);
@@ -616,11 +618,10 @@ function setupPackingGuideModal() {
     updatePackingProgress();
 }
 
-// **CHANGE**: Renamed and rebuilt function for the visual guide
 function renderPackingGuide() {
     const container = document.getElementById('checklist-container');
     if (!container || !currentData.packingListData) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; 
     for (const category in currentData.packingListData) {
         if (Array.isArray(currentData.packingListData[category])) {
             const categorySection = document.createElement('div');
@@ -657,13 +658,11 @@ function renderPackingGuide() {
     }
 }
 
-// **CHANGE**: New function to handle image upload for a packing item
 async function handlePackingItemImageUpload(event) {
     const file = event.target.files[0];
     if (!file || !userId) return;
 
     const { category, name } = event.target.dataset;
-    // Simple visual feedback - can be improved with a proper loader
     alert(`מעלה תמונה עבור ${name}...`);
 
     try {
@@ -680,7 +679,6 @@ async function handlePackingItemImageUpload(event) {
             await updateDoc(docRef, {
                 [`packingListData.${category}`]: categoryItems
             });
-            // onSnapshot will handle the re-render
         }
     } catch (error) {
         console.error("Error uploading packing item image:", error);
@@ -700,11 +698,10 @@ async function handleChecklistItemToggle(event) {
         categoryItems[itemIndex].checked = isChecked;
         const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
         await updateDoc(docRef, { [`packingListData.${category}`]: categoryItems });
-        updatePackingProgress(); // Update progress bar immediately
+        updatePackingProgress(); 
     }
 }
 
-// **CHANGE**: Updated to support new data structure
 async function handleAddPackingItem() {
     const input = document.getElementById('new-item-input');
     const categorySelect = document.getElementById('new-item-category-select');
@@ -713,7 +710,6 @@ async function handleAddPackingItem() {
 
     if (!newItemName || !category) return;
 
-    // New item structure with imageUrl
     const newItem = { name: newItemName, checked: false, imageUrl: null };
     
     const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
@@ -724,7 +720,6 @@ async function handleAddPackingItem() {
     input.value = '';
 }
 
-// **CHANGE**: Re-implemented for robustness with the new visual data structure
 async function handleRemovePackingItem(button) {
     const { category, name } = button.dataset;
     if (confirm(`האם למחוק את הפריט "${name}"?`)) {
@@ -767,7 +762,7 @@ async function handleUpdateListByTheme() {
             }
             newItems[category].forEach(itemName => {
                 if (!updatedPackingList[category].some(item => item.name === itemName)) {
-                    updatedPackingList[category].push({ name: itemName, checked: false, imageUrl: null }); // **CHANGE**: Add with new structure
+                    updatedPackingList[category].push({ name: itemName, checked: false, imageUrl: null }); 
                 }
             });
         }
@@ -788,7 +783,9 @@ async function handleUpdateListByTheme() {
 function updatePackingProgress() {
     if (!currentData.packingListData) return;
     const progressBar = document.getElementById('packingProgressBar');
-    if (!progressBar) return;
+    const progressText = document.getElementById('packingProgressText'); 
+    if (!progressBar || !progressText) return;
+    
     let total = 0;
     let checked = 0;
     for (const category in currentData.packingListData) {
@@ -797,9 +794,10 @@ function updatePackingProgress() {
             checked += currentData.packingListData[category].filter(item => item.checked).length;
         }
     }
-    const percentage = total > 0 ? (checked / total) * 100 : 0;
+    const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
     progressBar.style.width = percentage + '%';
-    document.getElementById('packingProgressText').textContent = `${checked}/${total} פריטים נארזו`;
+
+    progressText.textContent = `הושלמו ${percentage}% (${checked}/${total})`;
 }
 
 function handleLoadMore() {
@@ -828,7 +826,6 @@ function handleLoadMore() {
     }
 }
 
-// **CHANGE**: Updated to save to localStorage and use a better prompt
 async function handleFindMoreWithGemini() {
     const prompt = `Please suggest 3 more fun activities for a family with toddlers in or very near Geneva, Switzerland. They should be similar to the types of activities already on this list, but not duplicates. Provide ONLY a JSON array of objects in your response, with no other text. Each object must have these exact keys: "id", "name", "category", "time", "transport", "address", "description", "image", "link", "lat", "lon", "cost". 
     For the "image", provide a URL for a real, relevant, and royalty-free image (e.g., from Unsplash, Pexels). If a real image URL is not available, return an empty string "". 
@@ -848,17 +845,14 @@ async function handleFindMoreWithGemini() {
             throw new Error("Gemini did not return a valid array.");
         }
         
-        // Add to local state for immediate rendering
         currentData.activitiesData.push(...newActivities);
 
-        // Store in localStorage for the session
         const existingAiActivities = JSON.parse(localStorage.getItem('ai_added_activities')) || [];
         localStorage.setItem('ai_added_activities', JSON.stringify([...existingAiActivities, ...newActivities]));
         
-        // Re-render with the new activities
         displayedActivitiesCount = currentData.activitiesData.length;
         renderActivities(); 
-        initMap(); // Update map with new markers
+        initMap(); 
 
     } catch (error) {
         console.error("Error finding more activities with Gemini:", error);
@@ -897,24 +891,44 @@ async function handleImageUpload(event) {
     const files = event.target.files;
     if (!files.length) return;
 
-    alert(`מעלה ${files.length} תמונות...`);
+    const uploadStatus = document.getElementById('upload-status');
+    if (uploadStatus) {
+        uploadStatus.textContent = `מעלה ${files.length} תמונות...`;
+        uploadStatus.classList.remove('hidden', 'text-red-500');
+    }
+
 
     for (const file of files) {
         const timestamp = Date.now();
         const storageRef = ref(storage, `trip-photos/${userId}/${timestamp}-${file.name}`);
         
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
+        try {
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+    
+            const newPhoto = {
+                url: downloadURL,
+                uploadedAt: timestamp,
+                owner: userId
+            };
+            
+            const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
+            await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
 
-        const newPhoto = {
-            url: downloadURL,
-            uploadedAt: timestamp
-        };
-        
-        const docRef = doc(db, `artifacts/lipetztrip-guide/public/genevaGuide`);
-        await updateDoc(docRef, { photoAlbum: arrayUnion(newPhoto) });
+        } catch (error) {
+            console.error("Upload failed for file:", file.name, error);
+             if (uploadStatus) {
+                 uploadStatus.textContent = `העלאה נכשלה. בדוק את חוקי ה-CORS ב-Firebase Storage.`;
+                 uploadStatus.classList.add('text-red-500');
+             }
+            return;
+        }
     }
-    alert("התמונות הועלו בהצלחה!");
+    
+    if (uploadStatus) {
+        uploadStatus.textContent = "התמונות הועלו בהצלחה!";
+        setTimeout(() => uploadStatus.classList.add('hidden'), 3000);
+    }
 }
 
 async function handlePostBulletinMessage() {
@@ -981,7 +995,6 @@ function handleAddToCalendar() {
     window.open(googleCalendarUrl, '_blank');
 }
 
-// **CHANGE**: Updated to render luggage with size
 function renderLuggageManagement() {
     const container = document.getElementById('luggage-list-container');
     if (!container || !currentData.luggageData) return;
@@ -1003,11 +1016,10 @@ function renderLuggageManagement() {
     });
 }
 
-// **CHANGE**: Updated to handle luggage size
 async function handleAddLuggage() {
     const nameInput = document.getElementById('new-luggage-name');
     const ownerInput = document.getElementById('new-luggage-owner');
-    const sizeInput = document.getElementById('new-luggage-size'); // Assumes an input with this ID exists
+    const sizeInput = document.getElementById('new-luggage-size');
     const name = nameInput.value.trim();
     const owner = ownerInput.value.trim();
     const size = sizeInput ? sizeInput.value.trim() : '';
@@ -1041,7 +1053,6 @@ async function handleRemoveLuggage(event) {
     }
 }
 
-// **CHANGE**: Updated to send luggage size to AI
 async function handleRecalculatePackingPlan() {
     const resultContainer = document.getElementById('packing-suggestion-result');
     resultContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
@@ -1393,7 +1404,7 @@ async function handleSwapActivity(button) {
             await updateDoc(docRef, { itineraryData: updatedItinerary });
 
             document.getElementById('swap-activity-modal').classList.add('hidden');
-        }, { once: true }); // Prevent multiple clicks
+        }, { once: true }); 
     });
 
     openModal('swap-activity-modal');
@@ -1425,3 +1436,4 @@ async function callGeminiWithParts(parts) {
         return "אופס, משהו השתבש. אנא נסה שוב מאוחר יותר.";
     }
 }
+

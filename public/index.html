@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>המדריך האינטראקטיבי לטיול משפחתי בז'נבה</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Leaflet Map Library -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-primary">
+
+<header class="bg-white/80 backdrop-blur-sm sticky top-0 z-40 shadow-md">
+<nav class="container mx-auto px-6 py-3">
+<div class="flex justify-between items-center">
+<a href="#" class="text-xl font-bold text-accent">ז'נבה עם קטנטנים 🧸</a>
+<div class="hidden lg:flex items-center space-x-6 space-x-reverse">
+<a href="#plan" class="hover:text-accent nav-link">🗺️ מסלול</a>
+<a href="#activities" class="hover:text-accent nav-link">🎈 פעילויות</a>
+<button id="open-packing-modal-btn" class="hover:text-accent flex items-center">
+<i class="fa-solid fa-suitcase-rolling nav-icon"></i>
+מדריך אריזה
+</button>
+<button id="open-integrations-modal-btn" class="hover:text-accent flex items-center">
+    <i class="fa-solid fa-cogs nav-icon"></i>
+    כלים שימושיים
+</button>
+<button class="nav-gemini-btn hover:text-accent flex items-center">
+<i class="fa-solid fa-robot nav-icon"></i>
+שאל מומחה
+</button>
+</div>
+<div class="lg:hidden">
+<button id="menu-btn" class="text-gray-700 focus:outline-none">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+xmlns="http://www.w3.org/2000/svg">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+d="M4 6h16M4 12h16m-7 6h7"></path>
+</svg>
+</button>
+</div>
+</div>
+<div id="mobile-menu" class="hidden lg:hidden mt-3 space-y-2">
+<a href="#plan" class="nav-link block py-2 px-4 text-sm hover:bg-gray-200 rounded-md">🗺️ מסלול</a>
+<a href="#activities" class="nav-link block py-2 px-4 text-sm hover:bg-gray-200 rounded-md">🎈 פעילויות</a>
+<button id="open-packing-modal-btn-mobile"
+class="w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
+<i class="fa-solid fa-suitcase-rolling nav-icon"></i>
+מדריך אריזה
+</button>
+<button id="open-integrations-modal-btn-mobile"
+class="w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
+<i class="fa-solid fa-cogs nav-icon"></i>
+כלים שימושיים
+</button>
+<button
+class="nav-gemini-btn w-full text-right py-2 px-4 text-sm hover:bg-gray-200 rounded-md flex items-center">
+<i class="fa-solid fa-robot nav-icon"></i>
+שאל מומחה
+</button>
+</div>
+</nav>
+</header>
+
+<main class="container mx-auto px-6">
+<section class="text-center pt-16">
+<h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">ההרפתקה המשפחתית שלכם בז'נבה</h1>
+<p class="text-lg text-gray-600 max-w-3xl mx-auto">מדריך אינטראקטיבי ודינמי למשפחה עם פעוטות (2 ו-3), מבוסס
+על מלון Mercure Meyrin. כל המידע, הקישורים וההמלצות במקום אחד, כדי שתוכלו להתמקד במה שחשוב באמת -
+ליהנות.</p>
+</section>
+
+<!-- Photo Album Section -->
+<section id="photo-album" class="bg-white rounded-2xl p-6 shadow-lg">
+    <h2 class="section-title">🖼️ אלבום הטיול שלנו</h2>
+    <div id="carousel-container" class="relative w-full max-w-3xl mx-auto overflow-hidden rounded-lg">
+        <div id="carousel-inner" class="flex transition-transform duration-500 ease-in-out">
+            <!-- Images will be injected here -->
+        </div>
+        <button id="carousel-prev" class="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white/50 hover:bg-white/80 rounded-full p-2 text-gray-700 shadow-md z-10"><i class="fas fa-chevron-left"></i></button>
+        <button id="carousel-next" class="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white/50 hover:bg-white/80 rounded-full p-2 text-gray-700 shadow-md z-10"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div class="text-center mt-4">
+        <input type="file" id="image-upload-input" class="hidden" accept="image/*" multiple>
+        <button id="image-upload-btn" class="btn-primary px-6 py-3 rounded-lg"><i class="fas fa-camera mr-2"></i>העלה תמונות</button>
+        <p id="upload-status" class="text-sm text-gray-600 mt-2 hidden"></p>
+    </div>
+</section>
+
+
+<!-- Trip Progress Bar Section -->
+<section id="trip-progress" class="bg-white rounded-2xl p-6 shadow-lg">
+<h2 class="section-title">📊 ציר הזמן של הטיול</h2>
+<div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
+<div id="progress-bar-fill" class="bg-teal-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                <div id="progress-bar-text" class="absolute inset-0 flex items-center justify-center text-white font-bold text-sm truncate px-2"></div>
+</div>
+<div id="progress-bar-info" class="text-center mt-3 text-gray-600"></div>
+</section>
+
+<!-- Family Bulletin Board -->
+<section id="bulletin-board" class="bg-yellow-50 border-r-4 border-yellow-400 rounded-2xl p-8">
+    <h2 class="section-title">📌 לוח מודעות משפחתי</h2>
+    <div id="bulletin-messages" class="mb-4 space-y-3 max-h-60 overflow-y-auto p-4 bg-white rounded-lg shadow-inner">
+        <!-- Messages will be injected here -->
+    </div>
+    <div class="flex gap-2">
+        <input type="text" id="bulletin-input" class="flex-1 border border-gray-300 rounded-lg py-2 px-4" placeholder="כתבו הודעה לכולם...">
+        <button id="bulletin-post-btn" class="btn-primary px-6 py-2 rounded-lg">פרסם</button>
+    </div>
+</section>
+
+<section id="bookings" class="bg-secondary rounded-2xl">
+<h2 class="section-title">✈️ מרכז ההזמנות שלכם 🏨</h2>
+<p class="section-subtitle">גישה מהירה לפרטי הטיסות והמלון שלכם.</p>
+<div id="flight-alert"
+class="hidden max-w-4xl mx-auto mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+<p class="font-bold">🚨 עדכון חשוב בטיסות!</p>
+<p id="flight-alert-message"></p>
+</div>
+<div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+<div class="bg-white p-8 rounded-xl shadow-lg">
+<h3 class="text-2xl font-bold mb-4 text-accent">✈️ טיסות</h3>
+<p id="booking-ref-display" class="mb-4">טוען מספר הזמנה...</p>
+<div class="space-y-4">
+<button id="open-flights-modal-btn"
+class="block w-full text-center btn-primary px-4 py-3 rounded-lg">הצג פירוט טיסות
+מלא</button>
+</div>
+<p class="text-sm text-gray-600 mt-4">הפירוט כולל מסלול, זמנים, קישורי צ'ק-אין ופרטי נוסעים.</p>
+</div>
+<div class="bg-white p-8 rounded-xl shadow-lg">
+<h3 class="text-2xl font-bold mb-4 text-accent">🏨 מלון</h3>
+<p class="mb-2"><strong>מלון:</strong> Mercure Geneva Airport</p>
+<p class="mb-4"><strong>מספר הזמנה:</strong> PPMHBPDH</p>
+<button id="open-hotel-modal-btn"
+class="block w-full text-center btn-primary px-4 py-3 rounded-lg">הצג פרטי הזמנה מלאים</button>
+<p class="text-sm text-gray-600 mt-4">הצגת פרטי ההזמנה המלאים, כולל קוד QR לאפליקציה של Accor.</p>
+</div>
+</div>
+</section>
+
+<section id="weather">
+<h2 class="section-title">☀️ תחזית מזג אוויר חיה בז'נבה 🌧️</h2>
+<p class="section-subtitle">תכננו את היום שלכם בהתאם לשמש או לגשם. התחזית מתעדכנת אוטומטית.</p>
+<div id="weather-forecast"
+class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 pb-4 max-w-5xl mx-auto">
+<p class="text-center w-full col-span-full">טוען תחזית עדכנית...</p>
+</div>
+<div class="text-center mt-6">
+<button id="what-to-wear-btn" class="btn-primary px-6 py-3 rounded-lg hidden">✨ מה ללבוש היום? ✨</button>
+</div>
+</section>
+
+<section id="daily-special" class="bg-teal-50 border-r-4 border-accent rounded-2xl">
+<div class="p-8">
+<h2 class="section-title !mb-2">🌟 אטרקציית היום 🌟</h2>
+<div id="daily-special-content" class="text-center text-lg text-gray-700 max-w-2xl mx-auto">
+<p>טוען המלצה יומית...</p>
+</div>
+</div>
+</section>
+
+<section id="logistics" class="bg-secondary rounded-2xl">
+<h2 class="section-title">📋 מרכז הבקרה של הטיול</h2>
+<p class="section-subtitle">כל מה שצריך לדעת על נקודת המוצא שלכם והכלים שיעמדו לרשותכם.</p>
+<div class="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+<div class="bg-white p-8 rounded-xl shadow-lg">
+<h3 class="text-2xl font-bold mb-4 text-accent">🏠 בסיס הבית: Mercure Hotel Meyrin</h3>
+<p class="mb-2">📍 <strong>כתובת:</strong> Rue de la Bergère 3, 1217 Meyrin</p>
+<p class="mb-4">המלון ממוקם אסטרטגית ליד תחנת הרכבת <strong>Zimeysa</strong> (דקת הליכה).</p>
+</div>
+<div class="bg-white p-8 rounded-xl shadow-lg">
+<h3 class="text-2xl font-bold mb-4 text-accent">🎫 הכרטיס המוזהב: Geneva Transport Card</h3>
+<p class="mb-4">עם הצ'ק-אין למלון, תקבלו בחינם כרטיס נסיעה דיגיטלי המקנה נסיעה חופשית בכל התחבורה
+הציבורית בז'נבה.</p>
+</div>
+</div>
+</section>
+
+<section id="stroller-guide">
+<h2 class="section-title">🚇 ניווט עם עגלה כמו מקומיים</h2>
+<p class="section-subtitle">התחבורה הציבורית בז'נבה ידידותית להפליא למשפחות. כמה טיפים פשוטים יהפכו כל נסיעה
+לחלקה.</p>
+<div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto text-center">
+<div class="bg-secondary p-6 rounded-xl">
+<div class="text-4xl mb-4">🟠</div>
+<h3 class="text-xl font-bold mb-2">חפשו את העיגול הכתום</h3>
+<p>בתחנה, המתינו ליד העיגול הכתום על המדרכה. הוא מסמן איפה בדיוק תעצור הדלת הייעודית לעגלות.</p>
+</div>
+<div class="bg-secondary p-6 rounded-xl">
+<div class="text-4xl mb-4">♿</div>
+<h3 class="text-xl font-bold mb-2">השתמשו בדלת הנכונה</h3>
+<p>עלו ורדו רק מהדלתות המסומנות בסמל של עגלה או כיסא גלגלים. יש שם יותר מקום והכניסה רחבה ונוחה.</p>
+</div>
+<div class="bg-secondary p-6 rounded-xl">
+<div class="text-4xl mb-4">🔵</div>
+<h3 class="text-xl font-bold mb-2">לחצו על הכפתור הכחול</h3>
+<p>זהו הטיפ החשוב ביותר! לחיצה על הכפתור הכחול (מבחוץ או מבפנים) מונעת מהדלת להיסגר אוטומטית ומאותתת
+לנהג.</p>
+</div>
+</div>
+</section>
+
+<section id="custom-plan-generator" class="bg-white rounded-2xl border-2 border-dashed border-accent">
+<h2 class="section-title">✨ מתכנן הטיולים החכם ✨</h2>
+<p class="section-subtitle">רוצים תוכנית יומית מותאמת אישית? ספרו לי מה מתחשק לכם (למשל: "יום רגוע עם גן שעשועים ואוכל פשוט"), והבינה המלאכותית תבנה לכם הצעה.</p>
+<div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2">
+<input type="text" id="custom-plan-prompt" class="flex-1 border border-gray-300 rounded-lg py-3 px-4" placeholder="למשל: יום רגוע עם גינה וגלידה...">
+<button id="generate-custom-plan-btn" class="btn-primary px-6 py-3 rounded-lg">צור לי תוכנית</button>
+</div>
+<div id="custom-plan-result" class="max-w-2xl mx-auto mt-6"></div>
+</section>
+
+<section id="plan">
+<h2 class="section-title">🗺️ מסלול יומי גמיש והיררכי</h2>
+<p class="section-subtitle">המסלול שלכם נטען באופן דינמי ממסד הנתונים...</p>
+<div class="space-y-8 max-w-4xl mx-auto">
+<!-- Itinerary day cards will be dynamically inserted here by script.js -->
+</div>
+</section>
+
+<section id="activities">
+<h2 class="section-title">🎈 מאגר הפעילויות האינטראקטיבי</h2>
+<p class="section-subtitle">מצאו את הבילוי המושלם לכל רגע. <strong>חשוב:</strong> לחצו תמיד על "לאתר הרשמי"
+כדי לוודא שעות פתיחה ומחירים עדכניים לפני היציאה.</p>
+
+<div class="flex flex-wrap justify-center gap-2 mb-8">
+<button class="btn-filter active px-4 py-2 rounded-full" data-filter="all">הכל</button>
+<button class="btn-filter px-4 py-2 rounded-full" data-filter="משחקייה">🧸 משחקיות מקורות</button>
+<button class="btn-filter px-4 py-2 rounded-full" data-filter="תרבות">🎨 תרבות ומוזיאונים</button>
+<button class="btn-filter px-4 py-2 rounded-full" data-filter="קפה">☕ בתי קפה</button>
+<button class="btn-filter px-4 py-2 rounded-full" data-filter="חוץ">🌳 פארקים וחוץ</button>
+</div>
+<div class="flex flex-wrap justify-center items-center gap-2 mb-12">
+<span class="font-semibold">זמן נסיעה מהמלון:</span>
+<button class="btn-filter rounded-full px-4 py-2" data-time-filter="all">הכל</button>
+<button class="btn-filter rounded-full px-4 py-2" data-time-filter="20">עד 20 דקות</button>
+<button class="btn-filter rounded-full px-4 py-2" data-time-filter="40">20-40 דקות</button>
+<button class="btn-filter rounded-full px-4 py-2" data-time-filter="60">מעל 40 דקות</button>
+</div>
+
+<div id="activities-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <p class="text-center col-span-full">טוען פעילויות...</p>
+</div>
+<div id="load-more-container" class="text-center mt-8 hidden">
+    <button id="load-more-btn" class="btn-primary px-6 py-3 rounded-lg">טען עוד פעילויות 🎈</button>
+</div>
+</section>
+
+<!-- Interactive Map Section -->
+<section id="map-section" class="bg-secondary rounded-2xl">
+<h2 class="section-title">📍 מפת האזור האינטראקטיבית</h2>
+<p class="section-subtitle">עברו עם העכבר מעל הסמנים כדי לראות פרטים על כל מקום וזמני הגעה מהמלון.</p>
+<div id="map" class="h-[600px] w-full rounded-lg shadow-lg relative z-0"></div>
+</section>
+</main>
+
+<footer class="bg-secondary mt-12">
+<div class="container mx-auto px-6 py-8 text-center text-gray-600">
+<p>נבנה באהבה כדי להפוך את החופשה המשפחתית שלכם לבלתי נשכחת. ❤️</p>
+<p class="text-sm mt-2">טיול נעים!</p>
+</div>
+</footer>
+
+<!-- Modals -->
+<div id="packing-guide-modal"
+class="modal fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center p-4">
+<div class="bg-primary rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800 z-20">
+<i class="fas fa-times fa-2x"></i>
+</button>
+<div class="p-6 border-b">
+<h3 class="text-2xl font-bold text-center text-accent">מדריך אריזה אסטרטגי: טיסה לשווייץ 🇨🇭</h3>
+</div>
+<div class="sticky top-0 bg-primary/90 backdrop-blur-sm z-10 p-4 border-b">
+<div class="w-full bg-gray-200 rounded-full h-4 mb-4 shadow-inner relative">
+<div id="packingProgressBar" class="bg-green-500 h-4 rounded-full progress-bar-fill"
+style="width: 0%"></div>
+<div id="packingProgressText" class="absolute inset-0 flex items-center justify-center text-white font-bold text-xs"></div>
+</div>
+<nav class="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm sm:text-base">
+<a href="#packing-master-list"
+class="packing-nav-link font-semibold text-gray-600 hover:text-accent">רשימה מלאה</a>
+<a href="#luggage-management-section"
+class="packing-nav-link font-semibold text-gray-600 hover:text-accent">ניהול כבודה</a>
+<a href="#packing-assistant"
+class="packing-nav-link font-semibold text-gray-600 hover:text-accent">עוזר חכם</a>
+</nav>
+</div>
+<div id="packing-modal-content" class="flex-1 overflow-y-auto p-6">
+<div class="modal-checklist-container space-y-10">
+<section id="packing-master-list" class="scroll-mt-24">
+<h2 class="text-2xl font-bold mb-4 text-right">שלב א': רשימת הציוד המלאה
+</h2>
+<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
+<div id="checklist-container">
+<!-- Checklist items will be rendered here by JavaScript -->
+</div>
+<div class="border-t pt-4">
+    <h4 class="text-lg font-semibold mb-2">הוסף פריט לרשימה</h4>
+    <div class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="new-item-input" placeholder="שם הפריט" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
+        <select id="new-item-category-select" class="border-gray-300 rounded-md shadow-sm p-2">
+            <!-- Options will be added dynamically -->
+        </select>
+        <button id="add-item-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
+    </div>
+</div>
+<div class="border-t pt-4">
+    <h4 class="text-lg font-semibold mb-2">עדכון חכם לפי נושא</h4>
+    <div class="flex gap-2">
+        <input type="text" id="theme-input" placeholder="לדוגמה: יום טיול בהרים" class="flex-1 border-gray-300 rounded-md shadow-sm p-2">
+        <button id="update-list-by-theme-btn" class="btn-primary px-4 py-2 rounded-md">עדכן עם Gemini</button>
+    </div>
+</div>
+</div>
+</section>
+<section id="luggage-management-section" class="scroll-mt-24">
+    <h2 class="text-2xl font-bold text-right mb-4">שלב ב': ארסנל הכבודה</h2>
+    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div id="luggage-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            <!-- Luggage items will be rendered here -->
+        </div>
+        <div class="border-t pt-4">
+             <h4 class="text-lg font-semibold mb-2">הוסף מזוודה/תיק</h4>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="new-luggage-name" placeholder="שם (למשל, מזוודה גדולה)" class="flex-1 border-gray-300 rounded-md p-2">
+                <input type="text" id="new-luggage-owner" placeholder="אחראי" class="w-1/3 border-gray-300 rounded-md p-2">
+                 <input type="text" id="new-luggage-size" placeholder="גודל (למשל, 8 קג)" class="w-1/3 border-gray-300 rounded-md p-2">
+                <button id="add-luggage-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
+            </div>
+        </div>
+        <div class="border-t pt-6 mt-6">
+            <h4 class="text-lg font-bold mb-2">חישוב תכנית אריזה</h4>
+             <p class="mb-4 text-sm text-gray-600">בהתבסס על רשימת הפריטים וארסנל הכבודה שלכם, העוזר החכם יבנה לכם תכנית אריזה אופטימלית.</p>
+            <button id="recalculate-packing-plan-btn" class="w-full btn-primary py-2 px-4 rounded-lg">✨ חשב מחדש תכנית אריזה ✨</button>
+        </div>
+    </div>
+</section>
+<section id="packing-assistant" class="scroll-mt-24">
+<h2 class="text-2xl font-bold text-right mb-4">שלב ג': עוזר אריזה חזותי 🤖</h2>
+<div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center">
+<p class="mb-4">רוצים עזרה אישית? צלמו את המזוודה שלכם ואת ערימת הציוד, והעוזר החכם יבנה
+לכם תכנית אריזה אופטימלית.</p>
+
+<input type="file" id="suitcase-image-input" class="hidden" accept="image/*">
+<input type="file" id="items-image-input" class="hidden" accept="image/*">
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+<div id="suitcase-preview-container"
+class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
+<img id="suitcase-preview" class="hidden max-h-full max-w-full rounded-md">
+<div id="suitcase-placeholder">
+<i class="fas fa-suitcase text-4xl text-gray-400"></i>
+<button id="upload-suitcase-btn"
+class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">1. העלה תמונת
+מזוודה</button>
+</div>
+</div>
+<div id="items-preview-container"
+class="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-gray-50">
+<img id="items-preview" class="hidden max-h-full max-w-full rounded-md">
+<div id="items-placeholder">
+<i class="fas fa-tshirt text-4xl text-gray-400"></i>
+<button id="upload-items-btn"
+class="mt-2 btn-primary text-sm py-1 px-3 rounded-md">2. העלה תמונת
+ציוד</button>
+</div>
+</div>
+</div>
+
+<button id="get-packing-suggestion-btn" class="w-full btn-primary py-2 px-4 rounded-lg"
+disabled>✨ קבלו הצעת אריזה חכמה ✨</button>
+
+<div id="packing-suggestion-result" class="mt-4 text-right"></div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</div>
+
+<div id="gemini-chat-modal"
+class="modal fixed inset-0 bg-black bg-opacity-50 z-[101] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-lg h-full max-h-[80vh] flex flex-col p-4 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 class="text-2xl font-bold mb-4 text-center text-accent">שאל מומחה מקומי 🤖</h3>
+<div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
+<!-- Messages will be loaded from Firebase here -->
+</div>
+<div id="chat-loader" class="hidden p-4 justify-center">
+<div class="loader"></div>
+</div>
+<div id="chat-image-preview-container" class="hidden p-2 border-t text-center">
+<img id="chat-image-preview" class="max-h-24 rounded-md inline-block" />
+<button id="chat-remove-image-btn"
+class="text-red-500 text-xs mx-auto block mt-1 hover:underline">הסר תמונה</button>
+</div>
+<div class="mt-4 flex items-center">
+<input type="file" id="chat-image-input" class="hidden" accept="image/*">
+<button id="chat-attach-btn" class="text-gray-500 p-2 rounded-full hover:bg-gray-200">
+<i class="fas fa-paperclip"></i>
+</button>
+<input type="text" id="chat-input" class="flex-1 border border-gray-300 rounded-full py-2 px-4 mx-2"
+placeholder="כתוב את שאלתך כאן...">
+<button id="chat-send-btn" class="btn-primary rounded-full p-3">
+    <i class="fas fa-paper-plane"></i>
+</button>
+</div>
+</div>
+</div>
+
+<div id="story-modal"
+class="modal fixed inset-0 bg-black bg-opacity-50 z-[101] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col p-6 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 class="text-2xl font-bold mb-4 text-center text-purple-600">סיפור לפני השינה 🌙</h3>
+<div id="story-modal-content" class="flex-1 overflow-y-auto p-4 leading-relaxed">
+</div>
+</div>
+</div>
+
+<div id="nearby-modal"
+class="modal fixed inset-0 bg-black bg-opacity-50 z-[102] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-full overflow-y-auto p-6 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 class="text-2xl font-bold mb-4 text-accent">מקומות קרובים אליך</h3>
+<div id="nearby-results" class="space-y-4"></div>
+</div>
+</div>
+
+<div id="hotel-booking-modal"
+class="modal fixed inset-0 bg-black bg-opacity-50 z-[100] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-full overflow-y-auto p-6 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 class="text-2xl font-bold mb-4 text-gray-800">השהות שלכם בז'נבה</h3>
+<div class="border rounded-lg p-4 mb-6">
+<h4 class="font-bold text-lg mb-2">פרטי ההזמנה</h4>
+<div class="grid grid-cols-2 gap-4 text-sm">
+</div>
+</div>
+<div class="grid md:grid-cols-2 gap-6">
+<div class="bg-secondary p-4 rounded-lg">
+<h4 class="font-bold text-lg mb-2">המלון שלכם</h4>
+<img src=""
+alt="" class="rounded-md mb-2">
+<p class="font-semibold"></p>
+<p class="text-sm"></p>
+</div>
+<div class="space-y-4">
+<div class="bg-secondary p-4 rounded-lg text-center">
+<h4 class="font-bold text-lg mb-2">מצאו את פרטי ההזמנה באפליקציה</h4>
+<img id="qr-code-img"
+src=""
+alt="QR Code for Accor App" class="mx-auto rounded-md">
+<p class="mt-2 font-semibold">סרקו אותי</p>
+</div>
+<div class="bg-secondary p-4 rounded-lg">
+<h4 class="font-bold text-lg mb-2">החדר שלכם</h4>
+<p id="room-type"></p>
+<p id="guests" class="text-sm"></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="flights-details-modal"
+class="modal fixed inset-0 bg-black bg-opacity-50 z-[100] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-full overflow-y-auto p-6 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 class="text-2xl font-bold mb-4 text-gray-800">פירוט טיסות מלא</h3>
+<div class="space-y-6" id="flight-details-content">
+</div>
+<div class="mt-6 text-center">
+<button id="show-boarding-passes-btn" class="btn-primary px-6 py-3 rounded-lg">הצג כרטיסי עלייה למטוס</button>
+</div>
+</div>
+</div>
+
+<div id="family-details-modal"
+class="modal fixed inset-0 bg-black bg-opacity-50 z-[100] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-full overflow-y-auto p-6 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 class="text-2xl font-bold mb-4 text-gray-800">פרטי דרכונים</h3>
+<div id="family-details-content" class="space-y-2">
+</div>
+</div>
+</div>
+
+<div id="text-response-modal"
+class="modal fixed inset-0 bg-black bg-opacity-50 z-[101] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col p-4 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 id="text-response-modal-title" class="text-2xl font-bold mb-4 text-center text-accent">תשובת המומחה</h3>
+<div id="text-response-modal-content" class="flex-1 overflow-y-auto p-2">
+</div>
+</div>
+</div>
+
+<div id="boarding-pass-modal"
+class="modal fixed inset-0 bg-black bg-opacity-60 z-[102] hidden items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col p-4 relative">
+<button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+<i class="fas fa-times fa-lg"></i>
+</button>
+<h3 class="text-2xl font-bold mb-4 text-center text-accent">כרטיסי עלייה למטוס</h3>
+<div id="boarding-pass-content" class="flex-1 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Boarding passes will be injected here -->
+</div>
+</div>
+</div>
+
+<!-- Integrations Modal -->
+<div id="integrations-modal" class="modal fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center p-4">
+    <div class="bg-primary rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col relative">
+        <button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800 z-20"><i class="fas fa-times fa-2x"></i></button>
+        <div class="p-6 border-b">
+            <h3 class="text-2xl font-bold text-center text-accent">כלים שימושיים ושיתוף</h3>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+            <!-- Top Row: Main Tools -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <button id="find-nearby-btn" class="tool-card">
+                    <i class="fas fa-map-marker-alt fa-2x mb-2 text-red-500"></i>
+                    <span class="font-bold">מצא קרוב אליי</span>
+                    <span class="text-xs text-gray-500">בתי מרקחת, גני שעשועים ועוד</span>
+                </button>
+                <button id="share-whatsapp-btn" class="tool-card">
+                    <i class="fab fa-whatsapp fa-2x mb-2 text-green-500"></i>
+                    <span class="font-bold">שתף ב-WhatsApp</span>
+                    <span class="text-xs text-gray-500">שלח קישור למדריך למשפחה/חברים</span>
+                </button>
+                <button id="add-to-calendar-btn" class="tool-card">
+                    <i class="fas fa-calendar-alt fa-2x mb-2 text-blue-500"></i>
+                    <span class="font-bold">הוסף ליומן Google</span>
+                     <span class="text-xs text-gray-500">חסום את תאריכי הטיול ביומן</span>
+                </button>
+            </div>
+            
+            <!-- Bottom Rows: Trackers and Converters -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                 <!-- Expense Tracker -->
+                <section id="expense-tracker">
+                    <h2 class="text-xl font-bold mb-4 text-right text-accent">💸 מעקב הוצאות</h2>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                            <input type="text" id="expense-desc" placeholder="תיאור" class="flex-1 border p-2 rounded-md">
+                            <input type="number" id="expense-amount" placeholder="סכום" class="w-24 border p-2 rounded-md">
+                            <button id="add-expense-btn" class="btn-primary px-4 py-2 rounded-md">הוסף</button>
+                        </div>
+                        <div id="expense-list" class="max-h-40 overflow-y-auto"></div>
+                        <div class="text-right font-bold text-lg mt-4 border-t pt-2">
+                            <span>סה"כ: </span>
+                            <span id="expense-total">0.00 CHF</span>
+                        </div>
+                    </div>
+                </section>
+                <!-- Currency Converter -->
+                <section>
+                     <h2 class="text-xl font-bold mb-4 text-right text-accent">💱 ממיר מטבעות</h2>
+                     <div class="bg-white p-4 rounded-lg shadow-md space-y-3">
+                         <div class="flex items-center gap-2">
+                             <span>🇨🇭</span>
+                             <input type="number" id="currency-chf" class="w-full p-2 border rounded" placeholder="פרנק שוויצרי (CHF)">
+                         </div>
+                        <div class="flex items-center gap-2">
+                             <span>🇮🇱</span>
+                             <input type="number" id="currency-ils" class="w-full p-2 border rounded bg-gray-100" placeholder="שקל חדש (ILS)" readonly>
+                         </div>
+                     </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Swap Activity Modal -->
+<div id="swap-activity-modal" class="modal fixed inset-0 bg-black bg-opacity-60 z-[101] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col p-4 relative">
+        <button class="modal-close-btn absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+            <i class="fas fa-times fa-lg"></i>
+        </button>
+        <h3 class="text-2xl font-bold mb-4 text-center text-accent">החלף פעילות</h3>
+        <div id="swap-activity-list" class="flex-1 overflow-y-auto p-2 space-y-2">
+            <!-- Activity swap options will be injected here -->
+        </div>
+    </div>
+</div>
+
+
+<script src="main.js" type="module"></script>
+</body>
+</html>
+
